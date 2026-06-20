@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="zh-CN" style="overflow-x:hidden;">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>红利ETF 量化看板模板</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#f3f4f6; --card:#fff; --border:rgba(0,0,0,0.07);
+    --red:#dc2626; --green:#059669; --blue:#2563eb; --amber:#d97706; --purple:#7c3aed;
+    --text-primary:#111827; --text-secondary:#6b7280; --text-muted:#9ca3af;
+    --accent:#7c3aed;
+    --shadow:0 1px 4px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.04);
+  }
+  body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text-primary); min-height:100vh; padding:16px; -webkit-font-smoothing:antialiased; overflow-x:hidden; max-width:100%; box-sizing:border-box; }
+
+  /* ── Header ── */
+  .header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:20px; }
+  .header-left { flex:1; min-width:0; }
+  .header-left h1 { font-size:20px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; outline:none; border-radius:6px; padding:2px 4px; margin-left:-4px; transition:background .15s; cursor:text; }
+  .header-left h1:hover { background:rgba(124,58,237,.06); }
+  .header-left h1:focus { background:rgba(124,58,237,.08); box-shadow:0 0 0 2px rgba(124,58,237,.2); white-space:normal; text-overflow:clip; }
+  .header-meta { display:flex; align-items:center; justify-content:space-between; gap:4px; margin-top:4px; width:100%; }
+  .header-meta-left { display:flex; align-items:center; gap:4px; flex-shrink:0; }
+  .meta-label { font-size:12px; color:var(--text-secondary); white-space:nowrap; }
+  .date-input { font-family:'Inter',sans-serif; font-size:12px; color:var(--text-secondary); background:transparent; border:none; outline:none; padding:0; cursor:pointer; -webkit-appearance:none; appearance:none; }
+  .date-input::-webkit-calendar-picker-indicator { opacity:.4; cursor:pointer; width:14px; height:14px; margin-left:2px; }
+  .date-input:hover { color:var(--purple); }
+  .header-badge { font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; white-space:nowrap; flex-shrink:0; display:inline-flex; align-items:center; margin-left:auto; }
+
+  /* ── Entry Card ── */
+  .entry-card { background:var(--card); border-radius:16px; box-shadow:var(--shadow); border:0.5px solid var(--border); padding:16px; margin-bottom:20px; overflow:hidden; }
+  .entry-card-title { font-size:14px; font-weight:700; color:var(--text-primary); margin-bottom:14px; padding-left:10px; border-left:3px solid var(--accent); display:flex; align-items:center; gap:8px; }
+  .entry-dim-label { font-size:11px; font-weight:700; color:var(--text-secondary); margin:12px 0 8px; text-transform:uppercase; letter-spacing:.5px; display:flex; align-items:center; gap:6px; }
+  .entry-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+  .entry-field { display:flex; flex-direction:column; gap:4px; }
+  .entry-field label { font-size:11px; font-weight:600; color:var(--text-secondary); white-space:nowrap; }
+  .entry-field input,.entry-field select { font-family:'JetBrains Mono',monospace; font-size:13px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:8px; background:#f9fafb; color:var(--text-primary); outline:none; transition:border-color .2s,box-shadow .2s; width:100%; }
+  .entry-field input:focus,.entry-field select:focus { border-color:var(--accent); box-shadow:0 0 0 2px rgba(124,58,237,.1); background:#fff; }
+  .entry-field input::placeholder { color:var(--text-muted); font-size:11px; }
+  .entry-field select { color:var(--text-secondary); }
+  .entry-field select.sel { color:var(--text-primary); }
+  .entry-full { grid-column:span 2; }
+  .entry-btn-row { display:flex; gap:10px; margin-top:14px; }
+  .btn-autofill { flex:1; padding:10px; background:var(--accent); color:#fff; border:none; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; transition:background .2s; white-space:nowrap; }
+  .btn-autofill:hover { background:#6d28d9; }
+  .btn-calc { flex:1; padding:10px; background:#059669; color:#fff; border:none; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; transition:background .2s; white-space:nowrap; }
+  .btn-calc:hover { background:#047857; }
+  .btn-clear { padding:10px 16px; background:#f3f4f6; color:var(--text-secondary); border:1px solid #e5e7eb; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; }
+  .calc-result { display:none; margin-top:12px; padding:12px; background:#f0fdf4; border:.5px solid #bbf7d0; border-radius:10px; }
+  .calc-result.show { display:block; }
+  .calc-result-title { font-size:11px; font-weight:700; color:#065f46; margin-bottom:6px; }
+  .calc-result p { font-size:11px; color:#065f46; line-height:1.7; }
+  .entry-note { font-size:10px; color:var(--text-muted); margin-top:8px; line-height:1.5; }
+
+  /* ── Score Hero ── */
+  .score-hero { background:var(--card); border-radius:16px; box-shadow:var(--shadow); border:.5px solid var(--border); padding:24px 20px; margin-bottom:16px; text-align:center; }
+  .score-hero h2 { font-size:14px; font-weight:700; color:var(--text-secondary); margin-bottom:4px; }
+  .score-hero-big-row { display:flex; align-items:baseline; justify-content:center; gap:4px; margin:6px 0 12px; }
+  .score-big { font-family:'JetBrains Mono',monospace; font-size:72px; font-weight:700; line-height:1; }
+  .score-label { font-size:22px; font-weight:600; color:var(--text-secondary); }
+  .verdict-pill { display:inline-flex; align-items:center; gap:6px; margin:0 auto 16px; font-size:13px; font-weight:600; padding:7px 18px; border-radius:20px; white-space:nowrap; }
+  .verdict-dot { width:7px; height:7px; border-radius:50%; }
+  .score-scale-track { position:relative; height:8px; border-radius:99px; background:#e5e7eb; overflow:hidden; margin-bottom:6px; }
+  .score-scale-fill { position:absolute; top:0; left:0; height:100%; border-radius:99px; background:linear-gradient(to right,#dc2626,#f59e0b,#059669); }
+  .score-scale-labels { position:relative; height:16px; margin-top:4px; }
+  .score-scale-labels span { position:absolute; font-size:11px; color:var(--text-muted); font-weight:500; white-space:nowrap; transform:translateX(-50%); }
+  .score-scale-labels span:first-child { transform:translateX(0); }
+  .score-scale-labels span:last-child { transform:translateX(-100%); }
+  .score-hero-footnote { font-size:11px; color:var(--text-muted); margin-top:12px; }
+
+  /* ── KPI Cards ── */
+  .kpi-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:16px; width:100%; }
+  .kpi-card { background:var(--card); border-radius:12px; box-shadow:var(--shadow); border:.5px solid var(--border); padding:14px 14px 12px; border-left:3px solid var(--accent); min-width:0; overflow:hidden; }
+  .kpi-label { font-size:11px; color:var(--text-secondary); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .kpi-value { font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:700; line-height:1.1; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .kpi-value.red{color:var(--red);} .kpi-value.green{color:var(--green);} .kpi-value.amber{color:var(--amber);}
+  .kpi-sub { font-size:11px; color:var(--text-muted); margin-top:3px; white-space:nowrap; }
+
+  /* ── Section Card ── */
+  .section-card { background:var(--card); border-radius:12px; box-shadow:var(--shadow); border:.5px solid var(--border); padding:16px; margin-bottom:12px; overflow:hidden; }
+  .section-title { font-size:13px; font-weight:700; color:var(--text-primary); margin-bottom:12px; padding-left:10px; border-left:3px solid var(--accent); white-space:nowrap; }
+  .dim-label { font-size:11px; font-weight:700; color:var(--text-secondary); margin:4px 0 10px; text-transform:uppercase; letter-spacing:.5px; }
+  .divider { height:.5px; background:#e5e7eb; margin:10px 0; }
+
+  /* ── Score Row ── */
+  .score-row { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .score-row-label { font-size:12px; color:var(--text-primary); flex-shrink:0; width:100px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .score-bar-wrap { flex:1; height:6px; background:#e5e7eb; border-radius:99px; overflow:hidden; }
+  .score-bar-fill { height:100%; border-radius:99px; }
+  .score-row-pts { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; flex-shrink:0; width:52px; text-align:right; white-space:nowrap; }
+  .score-mini-desc { font-size:10px; color:var(--text-muted); margin-top:-6px; margin-bottom:8px; padding-left:108px; line-height:1.4; word-break:break-word; overflow-wrap:break-word; }
+  .subtotal-row { display:flex; justify-content:space-between; align-items:center; padding:5px 0; margin:4px 0 10px; border-top:.5px dashed #e5e7eb; border-bottom:.5px dashed #e5e7eb; }
+  .subtotal-row span:first-child { font-size:11px; font-weight:600; color:var(--text-secondary); }
+  .subtotal-row span:last-child { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; }
+  .rule-tag { display:inline-block; background:#f3f4f6; color:#374151; font-size:9px; font-weight:600; padding:1px 6px; border-radius:4px; margin-right:4px; white-space:nowrap; }
+
+  /* ── Fibonacci ── */
+  .fib-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .fib-label { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; width:50px; flex-shrink:0; color:var(--text-secondary); white-space:nowrap; }
+  .fib-bar-wrap { flex:1; height:8px; background:#f3f4f6; border-radius:99px; overflow:hidden; border:.5px solid #e5e7eb; }
+  .fib-bar-fill { height:100%; border-radius:99px; }
+  .fib-price { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; width:44px; flex-shrink:0; text-align:right; overflow:hidden; }
+  .fib-badge { font-size:10px; font-weight:600; padding:2px 7px; border-radius:20px; flex-shrink:0; white-space:nowrap; }
+  .badge-green{background:#d1fae5;color:#065f46;} .badge-amber{background:#fef3c7;color:#92400e;}
+  .badge-red{background:#fee2e2;color:#991b1b;} .badge-blue{background:#dbeafe;color:#1e40af;}
+  .badge-gray{background:#f3f4f6;color:#6b7280;} .badge-now{background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;}
+
+  /* ── Gauge ── */
+  .gauge-wrap { margin:8px 0; }
+  .gauge-track { position:relative; height:18px; border-radius:99px; background:linear-gradient(to right,#dc2626 0%,#f59e0b 40%,#fcd34d 60%,#34d399 80%,#059669 100%); margin-bottom:6px; }
+  .gauge-pointer { position:absolute; top:-5px; transform:translateX(-50%); width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-top:10px solid #111827; }
+  .gauge-pointer::after { content:''; position:absolute; top:-13px; left:-4px; width:8px; height:8px; background:#111827; border-radius:50%; }
+  .gauge-labels { display:flex; justify-content:space-between; font-size:9px; color:var(--text-muted); font-weight:500; padding:0 2px; white-space:nowrap; }
+  .gauge-value-row { display:flex; justify-content:center; margin-top:4px; }
+  .gauge-value-badge { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; padding:3px 12px; border-radius:20px; background:#ede9fe; color:#5b21b6; white-space:nowrap; }
+
+  /* ── MA Table ── */
+  .ma-table { width:100%; border-collapse:collapse; table-layout:fixed; }
+  .ma-table th { font-size:10px; color:var(--text-muted); font-weight:600; text-align:left; padding:0 6px 6px; }
+  .ma-table td { font-size:12px; padding:5px 6px; border-top:.5px solid #f3f4f6; overflow:hidden; text-overflow:ellipsis; }
+  .ma-table td:last-child { text-align:right; }
+  .tag-below{background:#fee2e2;color:#991b1b;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;}
+  .tag-above{background:#d1fae5;color:#065f46;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;}
+
+  /* ── Indicator Row ── */
+  .ind-row { display:flex; align-items:flex-start; gap:8px; padding:8px 0; border-top:.5px solid #f3f4f6; }
+  .ind-row:first-child { border-top:none; padding-top:0; }
+  .ind-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:3px; }
+  .ind-dot.red{background:var(--red);} .ind-dot.green{background:var(--green);}
+  .ind-dot.amber{background:var(--amber);} .ind-dot.gray{background:var(--text-muted);}
+  .ind-content h4 { font-size:12px; font-weight:600; word-break:break-word; }
+  .ind-content p { font-size:11px; color:var(--text-secondary); margin-top:2px; line-height:1.45; word-break:break-word; overflow-wrap:break-word; }
+  .color-pill { display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:700; white-space:nowrap; }
+  .color-pill .dot { width:6px; height:6px; border-radius:50%; }
+  .pill-red{background:#fee2e2;color:#991b1b;}
+  .pill-green{background:#d1fae5;color:#065f46;}
+  .pill-amber{background:#fef3c7;color:#92400e;}
+  .pill-maroon{background:#fef3c7;color:#92400e;}
+
+  /* ── Spread Box ── */
+  .spread-nums { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .spread-box { flex:1; min-width:80px; background:#f9fafb; border-radius:8px; padding:10px 12px; border:.5px solid var(--border); text-align:center; }
+  .spread-box-label { font-size:10px; color:var(--text-muted); white-space:nowrap; }
+  .spread-box-val { font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; margin-top:2px; }
+
+  /* ── Analyst Block ── */
+  .analyst-block { background:#f9fafb; border-radius:10px; padding:12px 14px; border:.5px solid var(--border); margin-top:12px; }
+  .analyst-block h4 { font-size:11px; font-weight:700; color:var(--text-secondary); margin-bottom:8px; text-transform:uppercase; letter-spacing:.5px; }
+  .analyst-item { display:flex; gap:8px; align-items:flex-start; margin-bottom:6px; }
+  .analyst-item:last-child { margin-bottom:0; }
+  .analyst-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+  .analyst-dot.green{background:#059669;} .analyst-dot.amber{background:#d97706;} .analyst-dot.red{background:#dc2626;}
+  .analyst-item p { font-size:11px; color:var(--text-primary); line-height:1.5; }
+
+  *, *::before, *::after { max-width:100%; }
+  img, table, pre, code { max-width:100%; }
+  @media (min-width:480px) {
+    .kpi-grid { grid-template-columns:repeat(4,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ 数据录入模块 ══ -->
+<div class="entry-card">
+  <div class="entry-card-title"><span>📊</span> 录入指标数据</div>
+
+  <div class="entry-dim-label"><span>📈</span> 估值面</div>
+  <div class="entry-grid">
+    <div class="entry-field">
+      <label>当前价格（元）</label>
+      <input type="number" id="e_price" placeholder="e.g. 1.372" step="0.001">
+    </div>
+    <div class="entry-field">
+      <label>股息率 DID（%）</label>
+      <input type="number" id="e_did" placeholder="e.g. 4.98" step="0.01">
+    </div>
+    <div class="entry-field">
+      <label>10Y国债收益率（%）</label>
+      <input type="number" id="e_cn10y" placeholder="e.g. 1.728" step="0.001">
+    </div>
+    <div class="entry-field">
+      <label>DID百分位·全历史（%）</label>
+      <input type="number" id="e_did_pct" placeholder="e.g. 51.94（全历史口径）" step="0.01">
+    </div>
+    <div class="entry-field">
+      <label>PB百分位·全历史（%）</label>
+      <input type="number" id="e_pb_pct" placeholder="e.g. 35.0" step="0.1">
+    </div>
+    <div class="entry-field">
+      <label>成分股平均ROE（%）</label>
+      <input type="number" id="e_roe" placeholder="e.g. 10.5" step="0.1">
+    </div>
+    <div class="entry-field entry-full">
+      <label>股债利差（%）— 自动计算</label>
+      <input type="number" id="e_spread" placeholder="自动 = DID - CN10Y" step="0.001" readonly style="background:#f3f4f6;color:#6b7280;">
+    </div>
+  </div>
+
+  <div class="entry-dim-label" style="margin-top:14px;"><span>📉</span> 技术面</div>
+  <div class="entry-grid">
+    <div class="entry-field">
+      <label>SMA60</label>
+      <input type="number" id="e_sma60" placeholder="e.g. 1.420" step="0.001">
+    </div>
+    <div class="entry-field">
+      <label>SMA120</label>
+      <input type="number" id="e_sma120" placeholder="e.g. 1.418" step="0.001">
+    </div>
+    <div class="entry-field">
+      <label>SMA250</label>
+      <input type="number" id="e_sma250" placeholder="e.g. 1.393" step="0.001">
+    </div>
+    <div class="entry-field">
+      <label>RSI 14日</label>
+      <input type="number" id="e_rsi" placeholder="e.g. 38.5" step="0.1">
+    </div>
+    <div class="entry-field">
+      <label>量比（今日/5日均量）</label>
+      <input type="number" id="e_vol_ratio" placeholder="e.g. 0.8" step="0.01">
+    </div>
+    <div class="entry-field">
+      <label>Fib 波段高点</label>
+      <input type="number" id="e_fib_high" placeholder="e.g. 1.501" step="0.001">
+    </div>
+    <div class="entry-field">
+      <label>Fib 波段低点</label>
+      <input type="number" id="e_fib_low" placeholder="e.g. 1.341" step="0.001">
+    </div>
+    <div class="entry-field">
+      <label>斐波那契所处区域</label>
+      <select id="e_fib_zone" onchange="this.classList.add('sel')">
+        <option value="">请选择</option>
+        <option value="above_0382">高于0.382（回调不充分）</option>
+        <option value="near_05">0.382~0.618（0.5附近）</option>
+        <option value="golden">0.618~0.786（黄金回调区）</option>
+        <option value="deep">0.786~1.000（深度回调区 ★）</option>
+        <option value="extreme">1.000+ 极限扩展区 ★★</option>
+      </select>
+    </div>
+    <div class="entry-field">
+      <label>成交量状态</label>
+      <select id="e_vol_state" onchange="this.classList.add('sel')">
+        <option value="">请选择</option>
+        <option value="shrink">缩量回调（量比≤0.8）</option>
+        <option value="mild">温和放量下跌（量比1.2~1.9）</option>
+        <option value="flat">平量震荡（量比0.9~1.1）</option>
+        <option value="surge">大幅放量下跌（量比≥2）</option>
+      </select>
+    </div>
+    <div class="entry-field">
+      <label>脉冲MACD 颜色</label>
+      <select id="e_macd_color" onchange="this.classList.add('sel');togglePrevMacd()">
+        <option value="">请选择</option>
+        <option value="lime">🟢 亮绿色 Lime（极强）</option>
+        <option value="green">🌲 深绿色 Green（偏多）</option>
+        <option value="orange">🟠 橙色 Orange（偏空）</option>
+        <option value="red">🔴 红色 Red（极弱）</option>
+        <option value="none">⬜ 无色（价格=中间线，震荡）</option>
+      </select>
+    </div>
+    <div class="entry-field">
+      <label>脉冲MACD 零轴位置</label>
+      <select id="e_macd_pos" onchange="this.classList.add('sel')">
+        <option value="">请选择</option>
+        <option value="above_near">主柱 &gt; 0 靠近零轴</option>
+        <option value="above_far">主柱 &gt; 0 远离零轴</option>
+        <option value="below_near">主柱 &lt; 0 靠近零轴</option>
+        <option value="below_far">主柱 &lt; 0 远离零轴</option>
+      </select>
+    </div>
+    <div class="entry-field" id="prev-macd-wrap" style="display:none;">
+      <label>上一根MACD颜色（无色时用）</label>
+      <select id="e_macd_prev" onchange="this.classList.add('sel')">
+        <option value="">请选择</option>
+        <option value="lime">🟢 亮绿色 Lime</option>
+        <option value="green">🌲 深绿色 Green</option>
+        <option value="orange">🟠 橙色 Orange</option>
+        <option value="red">🔴 红色 Red</option>
+      </select>
+    </div>
+    <div class="entry-field">
+      <label>Andean 绿线 bull 值</label>
+      <input type="number" id="e_bull" placeholder="e.g. 0.0000" step="0.0001">
+    </div>
+    <div class="entry-field">
+      <label>Andean 红线 bear 值</label>
+      <input type="number" id="e_bear" placeholder="e.g. 0.0217" step="0.0001">
+    </div>
+    <div class="entry-field">
+      <label>Andean 趋势状态</label>
+      <select id="e_andean_trend" onchange="this.classList.add('sel')">
+        <option value="">请选择</option>
+        <option value="bull_cross">绿线刚上穿红线（多头信号）</option>
+        <option value="bull_above">绿 &gt; 红（多头主导）</option>
+        <option value="bull_lt_bear">绿 &gt; 0 且 &lt; 红（多头弱）</option>
+        <option value="bull_zero">绿线 = 0（多头消失）</option>
+        <option value="bear_zero">红线 = 0（空头消失）</option>
+      </select>
+    </div>
+    <div class="entry-field">
+      <label>挤压动量 柱状颜色</label>
+      <select id="e_sqz_color" onchange="this.classList.add('sel')">
+        <option value="">请选择</option>
+        <option value="lime">🟢 亮绿 Lime（上涨加速）</option>
+        <option value="green">🌲 深绿 Green（上涨减速）</option>
+        <option value="maroon">🟤 深红 Maroon（下跌减速）</option>
+        <option value="red">🔴 鲜红 Red（下跌加速）</option>
+      </select>
+    </div>
+    <div class="entry-field">
+      <label>挤压动量 中轴点颜色</label>
+      <select id="e_sqz_dot" onchange="this.classList.add('sel')">
+        <option value="">请选择</option>
+        <option value="black">⚫ 黑色（Squeeze ON 蓄力）</option>
+        <option value="gray">⬜ 灰色（Squeeze OFF 释放）</option>
+        <option value="blue">🔵 蓝色（无挤压状态）</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="entry-btn-row">
+    <button class="btn-autofill" onclick="autoFill()">⚡ 自动填入今日数据</button>
+    <button class="btn-calc" onclick="calcScore()">📊 计算评分</button>
+    <button class="btn-clear" onclick="clearAll()">清空</button>
+  </div>
+
+  <div class="calc-result" id="calcResult">
+    <div class="calc-result-title">📊 评分预览结果</div>
+    <p id="calcText"></p>
+  </div>
+  <p class="entry-note">💡 点击"自动填入"填入当日数据；手动修改后点击"计算评分"预览新评分。股债利差根据DID和国债自动计算。</p>
+</div>
+
+<!-- ══ Header ══ -->
+<div class="header">
+  <div class="header-left">
+    <h1 id="etf-title" contenteditable="true" spellcheck="false" title="点击可直接编辑标题">红利ETF易方达 · 515180</h1>
+    <div class="header-meta">
+      <div class="header-meta-left">
+        <span class="meta-label">多维量化看板 ·</span>
+        <input type="date" id="header-date" class="date-input">
+      </div>
+      <span id="header-badge" class="header-badge" style="background:#fef3c7;color:#92400e;">中性偏多 · 轻仓试探</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Score Hero ══ -->
+<div class="score-hero">
+  <h2>综合值博率评分</h2>
+  <div class="score-hero-big-row">
+    <span id="hero-score" class="score-big" style="color:#d97706;">--</span>
+    <span class="score-label">/ 100</span>
+  </div>
+  <div id="hero-pill" class="verdict-pill" style="background:#fef3c7;color:#92400e;">
+    <span class="verdict-dot" style="background:#d97706;"></span>
+    填入数据后点击「计算评分」
+  </div>
+  <div class="score-scale-track">
+    <div id="hero-bar" class="score-scale-fill" style="width:0%;"></div>
+  </div>
+  <div class="score-scale-labels">
+    <span style="left:0%;">0 回避</span>
+    <span style="left:40%;">40</span>
+    <span style="left:60%;">60</span>
+    <span style="left:80%;">80</span>
+    <span style="left:100%;">100 强买</span>
+  </div>
+  <p class="score-hero-footnote">得分越高代表值博率越高 · 60分以上可考虑分批布局</p>
+</div>
+
+<!-- ══ KPI Cards ══ -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-label">当前价格</div>
+    <div class="kpi-value red" id="kpi-price">--</div>
+    <div class="kpi-sub" id="kpi-price-sub">待填入</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">DID 股息率</div>
+    <div class="kpi-value green" id="kpi-did">--</div>
+    <div class="kpi-sub" id="kpi-did-sub">待填入</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">CN10Y 国债</div>
+    <div class="kpi-value amber" id="kpi-cn10y">--</div>
+    <div class="kpi-sub" id="kpi-cn10y-sub">待填入</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">股债利差</div>
+    <div class="kpi-value amber" id="kpi-spread">--</div>
+    <div class="kpi-sub">DID - CN10Y</div>
+  </div>
+</div>
+
+<!-- ══ ① 量化得分分解 ══ -->
+<div class="section-card">
+  <div class="section-title">① 量化得分分解（总分100）</div>
+
+  <div class="dim-label">估值维度（60分）</div>
+
+  <div class="score-row">
+    <div class="score-row-label">股息率 DID</div>
+    <div class="score-bar-wrap"><div id="bar-did" class="score-bar-fill" style="width:0%;background:#059669;"></div></div>
+    <div id="pts-did" class="score-row-pts" style="color:#059669;">-- / 20</div>
+  </div>
+  <div id="desc-did" class="score-mini-desc">待填入数据</div>
+
+  <div class="score-row">
+    <div class="score-row-label">股债利差</div>
+    <div class="score-bar-wrap"><div id="bar-spread" class="score-bar-fill" style="width:0%;background:#059669;"></div></div>
+    <div id="pts-spread" class="score-row-pts" style="color:#059669;">-- / 16</div>
+  </div>
+  <div id="desc-spread" class="score-mini-desc">待填入数据</div>
+
+  <div class="score-row">
+    <div class="score-row-label">10Y国债方向</div>
+    <div class="score-bar-wrap"><div id="bar-bond" class="score-bar-fill" style="width:0%;background:#059669;"></div></div>
+    <div id="pts-bond" class="score-row-pts" style="color:#059669;">-- / 10</div>
+  </div>
+  <div id="desc-bond" class="score-mini-desc">待填入数据</div>
+
+  <div class="score-row">
+    <div class="score-row-label">PB百分位</div>
+    <div class="score-bar-wrap"><div id="bar-pb" class="score-bar-fill" style="width:0%;background:#059669;"></div></div>
+    <div id="pts-pb" class="score-row-pts" style="color:#059669;">-- / 10</div>
+  </div>
+  <div id="desc-pb" class="score-mini-desc">待填入数据</div>
+
+  <div class="score-row">
+    <div class="score-row-label">成分股ROE</div>
+    <div class="score-bar-wrap"><div id="bar-roe" class="score-bar-fill" style="width:0%;background:#059669;"></div></div>
+    <div id="pts-roe" class="score-row-pts" style="color:#059669;">-- / 4</div>
+  </div>
+  <div id="desc-roe" class="score-mini-desc">待填入数据</div>
+
+  <div class="subtotal-row">
+    <span>估值维度小计</span>
+    <span id="subtotal-val" style="color:#d97706;">-- / 60</span>
+  </div>
+
+  <div class="dim-label">技术面维度（40分）</div>
+
+  <div class="score-row">
+    <div class="score-row-label">价格与均线</div>
+    <div class="score-bar-wrap"><div id="bar-ma" class="score-bar-fill" style="width:0%;background:#059669;"></div></div>
+    <div id="pts-ma" class="score-row-pts" style="color:#059669;">-- / 10</div>
+  </div>
+  <div id="desc-ma" class="score-mini-desc">待填入数据</div>
+
+  <div class="score-row">
+    <div class="score-row-label">斐波那契位置</div>
+    <div class="score-bar-wrap"><div id="bar-fib" class="score-bar-fill" style="width:0%;background:#059669;"></div></div>
+    <div id="pts-fib" class="score-row-pts" style="color:#059669;">-- / 6</div>
+  </div>
+  <div id="desc-fib" class="score-mini-desc">待填入数据</div>
+
+  <div class="score-row">
+    <div class="score-row-label">脉冲MACD</div>
+    <div class="score-bar-wrap"><div id="bar-macd" class="score-bar-fill" style="width:0%;background:#dc2626;"></div></div>
+    <div id="pts-macd" class="score-row-pts" style="color:#dc2626;">-- / 7</div>
+  </div>
+  <div id="desc-macd" class="score-mini-desc">待填入数据</div>
+
+  <div class="score-row">
+    <div class="score-row-label">动能强弱指标</div>
+    <div class="score-bar-wrap"><div id="bar-andean" class="score-bar-fill" style="width:0%;background:#dc2626;"></div></div>
+    <div id="pts-andean" class="score-row-pts" style="color:#dc2626;">-- / 5</div>
+  </div>
+  <div id="desc-andean" class="score-mini-desc">待填入数据</div>
+
+  <div class="score-row">
+    <div class="score-row-label">挤压动量指标</div>
+    <div class="score-bar-wrap"><div id="bar-sqz" class="score-bar-fill" style="width:0%;background:#dc2626;"></div></div>
+    <div id="pts-sqz" class="score-row-pts" style="color:#dc2626;">-- / 6</div>
+  </div>
+  <div id="desc-sqz" class="score-mini-desc">待填入数据</div>
+
+  <div class="score-row">
+    <div class="score-row-label">RSI (14)</div>
+    <div class="score-bar-wrap"><div id="bar-rsi" class="score-bar-fill" style="width:0%;background:#059669;"></div></div>
+    <div id="pts-rsi" class="score-row-pts" style="color:#059669;">-- / 3</div>
+  </div>
+  <div id="desc-rsi" class="score-mini-desc">待填入数据</div>
+
+  <div class="score-row">
+    <div class="score-row-label">成交量状态</div>
+    <div class="score-bar-wrap"><div id="bar-vol" class="score-bar-fill" style="width:0%;background:#059669;"></div></div>
+    <div id="pts-vol" class="score-row-pts" style="color:#059669;">-- / 3</div>
+  </div>
+  <div id="desc-vol" class="score-mini-desc">待填入数据</div>
+
+  <div class="subtotal-row">
+    <span>技术面维度小计</span>
+    <span id="subtotal-tech" style="color:#dc2626;">-- / 40</span>
+  </div>
+
+  <div class="divider"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;">
+    <span style="font-size:12px;font-weight:600;color:var(--text-secondary);">综合得分</span>
+    <span id="total-display" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#d97706;">-- / 100</span>
+  </div>
+</div>
+
+<!-- ══ ② 价格与均线 ══ -->
+<div class="section-card">
+  <div class="section-title">② 价格与均线结构</div>
+  <table class="ma-table">
+    <thead><tr><th>均线</th><th>均值</th><th>当前偏离</th><th>状态</th></tr></thead>
+    <tbody id="ma-tbody">
+      <tr><td colspan="4" style="font-size:12px;color:var(--text-muted);padding:8px 6px;">请先填入数据并计算评分</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══ ③ Fibonacci ══ -->
+<div class="section-card">
+  <div class="section-title">③ 斐波那契回撤/扩展位</div>
+  <p style="font-size:10px;color:var(--text-muted);margin-bottom:10px;" id="fib-range-label">请填入Fib高低点</p>
+  <div id="fib-rows">
+    <p style="font-size:12px;color:var(--text-muted);">请先填入数据并计算评分</p>
+  </div>
+</div>
+
+<!-- ══ ④ 估值仪表盘 ══ -->
+<div class="section-card">
+  <div class="section-title">④ DID 股息率估值仪表盘</div>
+  <div class="gauge-wrap">
+    <div class="gauge-track">
+      <div class="gauge-pointer" id="did-pointer" style="left:50%;"></div>
+    </div>
+    <div class="gauge-labels"><span>过高</span><span>偏高</span><span>适中</span><span>偏低</span><span>过低</span></div>
+    <div class="gauge-value-row">
+      <span class="gauge-value-badge" id="did-gauge-label">DID --% · 百分位 --%</span>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="section-title" style="margin-top:12px;">股债利差仪表盘</div>
+  <div class="gauge-wrap">
+    <div class="gauge-track">
+      <div class="gauge-pointer" id="spread-pointer" style="left:50%;"></div>
+    </div>
+    <div class="gauge-labels"><span>不利</span><span>偏低</span><span>中性</span><span>偏高</span><span>极高</span></div>
+    <div class="gauge-value-row">
+      <span class="gauge-value-badge" id="spread-gauge-label">利差 --% · 待计算</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ⑤ 动能指标 ══ -->
+<div class="section-card">
+  <div class="section-title">⑤ 动能指标组合分析</div>
+  <div id="indicator-rows">
+    <p style="font-size:12px;color:var(--text-muted);">请先填入数据并计算评分</p>
+  </div>
+</div>
+
+<!-- ══ ⑥ 国债与利差 ══ -->
+<div class="section-card">
+  <div class="section-title">⑥ 10年期国债收益率</div>
+  <div class="spread-nums">
+    <div class="spread-box">
+      <div class="spread-box-label">CN10Y 当前</div>
+      <div class="spread-box-val" id="box-cn10y" style="color:var(--green);">--%</div>
+    </div>
+    <div class="spread-box">
+      <div class="spread-box-label">DID 股息率</div>
+      <div class="spread-box-val" id="box-did" style="color:var(--amber);">--%</div>
+    </div>
+    <div class="spread-box">
+      <div class="spread-box-label">股债利差</div>
+      <div class="spread-box-val" id="box-spread" style="color:var(--amber);">--%</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ⑦ 综合研判 ══ -->
+<div class="section-card" id="summary-card">
+  <div class="section-title">⑦ 综合研判</div>
+  <p style="font-size:12px;color:var(--text-muted);">请先填入数据并计算评分</p>
+</div>
+
+<!-- ══ 评分信号参考表 ══ -->
+<div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.04);border:0.5px solid rgba(0,0,0,0.07);padding:16px;margin-bottom:12px;">
+  <div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:12px;padding-left:10px;border-left:3px solid #7c3aed;white-space:nowrap;">评分信号参考</div>
+  <table style="width:100%;border-collapse:collapse;">
+    <thead>
+      <tr style="border-bottom:1.5px solid #e5e7eb;">
+        <th style="text-align:left;font-size:11px;font-weight:700;color:#6b7280;padding:0 8px 8px 0;white-space:nowrap;">总分</th>
+        <th style="text-align:left;font-size:11px;font-weight:700;color:#6b7280;padding:0 8px 8px;white-space:nowrap;">信号</th>
+        <th style="text-align:left;font-size:11px;font-weight:700;color:#6b7280;padding:0 0 8px 8px;white-space:nowrap;">建议</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:0.5px solid #f3f4f6;"><td style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:9px 8px 9px 0;white-space:nowrap;">85~100</td><td style="padding:9px 8px;white-space:nowrap;"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#065f46;"><span style="width:10px;height:10px;border-radius:50%;background:#16a34a;flex-shrink:0;"></span>极强买入</span></td><td style="font-size:12px;color:#374151;padding:9px 0 9px 8px;">重仓布局，加大单次买入比例</td></tr>
+      <tr style="border-bottom:0.5px solid #f3f4f6;"><td style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:9px 8px 9px 0;white-space:nowrap;">70~84</td><td style="padding:9px 8px;white-space:nowrap;"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#065f46;"><span style="width:10px;height:10px;border-radius:50%;background:#22c55e;flex-shrink:0;"></span>强买入</span></td><td style="font-size:12px;color:#374151;padding:9px 0 9px 8px;">分批建仓，正常节奏布局</td></tr>
+      <tr style="border-bottom:0.5px solid #f3f4f6;"><td style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:9px 8px 9px 0;white-space:nowrap;">60~69</td><td style="padding:9px 8px;white-space:nowrap;"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#92400e;"><span style="width:10px;height:10px;border-radius:50%;background:#eab308;flex-shrink:0;"></span>中性偏多</span></td><td style="font-size:12px;color:#374151;padding:9px 0 9px 8px;">轻仓试探，等待信号共振</td></tr>
+      <tr style="border-bottom:0.5px solid #f3f4f6;"><td style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:9px 8px 9px 0;white-space:nowrap;">45~59</td><td style="padding:9px 8px;white-space:nowrap;"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#92400e;"><span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;flex-shrink:0;"></span>中性观望</span></td><td style="font-size:12px;color:#374151;padding:9px 0 9px 8px;">持仓不动，暂停新增</td></tr>
+      <tr style="border-bottom:0.5px solid #f3f4f6;"><td style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:9px 8px 9px 0;white-space:nowrap;">30~44</td><td style="padding:9px 8px;white-space:nowrap;"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#991b1b;"><span style="width:10px;height:10px;border-radius:50%;background:#ef4444;flex-shrink:0;"></span>偏贵信号</span></td><td style="font-size:12px;color:#374151;padding:9px 0 9px 8px;">减仓或空仓等待</td></tr>
+      <tr><td style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:9px 8px 9px 0;white-space:nowrap;">&lt;30</td><td style="padding:9px 8px;white-space:nowrap;"><span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#991b1b;"><span style="width:10px;height:10px;border-radius:50%;background:#dc2626;flex-shrink:0;"></span>高估警示</span></td><td style="font-size:12px;color:#374151;padding:9px 0 9px 8px;">清仓规避风险</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="text-align:center;font-size:10px;color:#b0b7c3;margin-top:24px;padding-bottom:16px;letter-spacing:0.2px;">
+<!-- ══ ⑧ 历史记录与月度分析 ══ -->
+<div class="section-card" id="history-section">
+  <div class="section-title">⑧ 历史评分记录</div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+    <button onclick="exportCSV()" style="flex:1;padding:8px 12px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">📥 导出 CSV</button>
+    <button onclick="showMonthly()" style="flex:1;padding:8px 12px;background:#059669;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">📊 月度汇总</button>
+    <button onclick="clearHistory()" style="padding:8px 12px;background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">🗑️ 清除记录</button>
+  </div>
+  <div id="history-table-wrap">
+    <p style="font-size:12px;color:var(--text-muted);">暂无记录，计算评分后自动保存</p>
+  </div>
+</div>
+
+<!-- ══ 月度汇总弹窗 ══ -->
+<div id="monthly-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999;overflow-y:auto;">
+  <div style="background:#fff;margin:20px auto;max-width:480px;border-radius:16px;padding:20px;position:relative;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <span style="font-size:14px;font-weight:700;color:#111827;">📊 月度汇总分析</span>
+      <button onclick="document.getElementById('monthly-modal').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280;">×</button>
+    </div>
+    <div id="monthly-content"></div>
+  </div>
+</div>
+
+数据来源：TradingView · 红色火箭 · 仅供研究参考，不构成投资建议</div>
+
+<script>
+// ── 初始化日期 ──
+(function(){
+  const d = new Date();
+  const v = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  document.getElementById('header-date').value = v;
+})();
+
+// ── 无色时显示上一根MACD颜色字段 ──
+function togglePrevMacd(){
+  const c = document.getElementById('e_macd_color').value;
+  const wrap = document.getElementById('prev-macd-wrap');
+  wrap.style.display = c === 'none' ? 'flex' : 'none';
+}
+
+
+function updateSpread(){
+  const did = parseFloat(document.getElementById('e_did').value);
+  const cn = parseFloat(document.getElementById('e_cn10y').value);
+  const el = document.getElementById('e_spread');
+  el.value = (!isNaN(did)&&!isNaN(cn)) ? (did-cn).toFixed(3) : '';
+}
+document.getElementById('e_did').addEventListener('input', updateSpread);
+document.getElementById('e_cn10y').addEventListener('input', updateSpread);
+
+// ── 清空 ──
+function clearAll(){
+  ['e_price','e_did','e_cn10y','e_did_pct','e_spread','e_pb_pct','e_roe',
+   'e_sma60','e_sma120','e_sma250','e_rsi','e_vol_ratio',
+   'e_fib_high','e_fib_low','e_bull','e_bear'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  ['e_fib_zone','e_macd_color','e_macd_pos','e_macd_prev','e_sqz_color','e_sqz_dot','e_andean_trend','e_vol_state'].forEach(id=>{
+    const el=document.getElementById(id); if(el){el.value='';el.classList.remove('sel');}
+  });
+  document.getElementById('calcResult').classList.remove('show');
+}
+
+// ── 自动填入（模板示例数据，实际使用时替换） ──
+function autoFill(){
+  const data={
+    e_price:'1.372', e_did:'4.98', e_cn10y:'1.728', e_did_pct:'51.94',
+    e_pb_pct:'38.0', e_roe:'10.5',
+    e_sma60:'1.420', e_sma120:'1.418', e_sma250:'1.393',
+    e_rsi:'35.2', e_vol_ratio:'0.75',
+    e_fib_high:'1.501', e_fib_low:'1.341',
+    e_fib_zone:'deep', e_macd_color:'red', e_macd_pos:'below_far',
+    e_bull:'0.0000', e_bear:'0.0217',
+    e_sqz_color:'red', e_sqz_dot:'gray',
+    e_andean_trend:'bull_zero', e_vol_state:'shrink'
+  };
+  const sels=['e_fib_zone','e_macd_color','e_macd_pos','e_sqz_color','e_sqz_dot','e_andean_trend','e_vol_state'];
+  for(const[id,val] of Object.entries(data)){
+    const el=document.getElementById(id);
+    if(el){el.value=val; if(sels.includes(id)) el.classList.add('sel');}
+  }
+  updateSpread();
+  showMsg('✅ 已填入示例数据，请根据今日实际数据修改后点击"计算评分"');
+}
+
+// ── 颜色/得分工具 ──
+function scoreColor(score, max){
+  const pct = score/max;
+  return pct >= 0.7 ? '#059669' : pct >= 0.4 ? '#d97706' : '#dc2626';
+}
+function setBar(id, score, max){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const pct = Math.min(100, Math.round(score/max*100));
+  el.style.width = pct+'%';
+  el.style.background = scoreColor(score, max);
+}
+function setPts(id, score, max){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.textContent = `${score} / ${max}`;
+  el.style.color = scoreColor(score, max);
+}
+function setDesc(id, text){ const el=document.getElementById(id); if(el) el.textContent=text; }
+
+// ── 主计算逻辑 ──
+function calcScore(){
+  const price   = parseFloat(document.getElementById('e_price').value);
+  const did     = parseFloat(document.getElementById('e_did').value);
+  const cn10y   = parseFloat(document.getElementById('e_cn10y').value);
+  const didPct  = parseFloat(document.getElementById('e_did_pct').value);
+  const pbPct   = parseFloat(document.getElementById('e_pb_pct').value);
+  const roe     = parseFloat(document.getElementById('e_roe').value);
+  const sma60   = parseFloat(document.getElementById('e_sma60').value);
+  const sma120  = parseFloat(document.getElementById('e_sma120').value);
+  const sma250  = parseFloat(document.getElementById('e_sma250').value);
+  const rsi     = parseFloat(document.getElementById('e_rsi').value);
+  const volRatio= parseFloat(document.getElementById('e_vol_ratio').value);
+  const fibHigh = parseFloat(document.getElementById('e_fib_high').value);
+  const fibLow  = parseFloat(document.getElementById('e_fib_low').value);
+  const bull    = parseFloat(document.getElementById('e_bull').value);
+  const bear    = parseFloat(document.getElementById('e_bear').value);
+  const fibZone = document.getElementById('e_fib_zone').value;
+  const macdC   = document.getElementById('e_macd_color').value;
+  const macdPos = document.getElementById('e_macd_pos').value;
+  const macdPrev= document.getElementById('e_macd_prev').value;
+  const sqzC    = document.getElementById('e_sqz_color').value;
+  const sqzDot  = document.getElementById('e_sqz_dot').value;
+  const andTrend= document.getElementById('e_andean_trend').value;
+  const volState= document.getElementById('e_vol_state').value;
+
+  if(isNaN(did)||isNaN(cn10y)){ showMsg('⚠️ 请至少填写：DID股息率 和 10Y国债收益率'); return; }
+  const spread = did - cn10y;
+
+  let total=0, valTotal=0, techTotal=0, lines=[];
+
+  // ── 1. DID (20分) ──
+  let didS = did>=5.5 ? 20 : did>=5.0 ? 17 : did>=4.5 ? 13 : did>=4.0 ? 7 : 2;
+  const didLabel = did>=5.5?'≥5.5% 满分':did>=4.5?'4.5%~5.5% 合理中枢':did>=4.0?'4.0%~4.5% 偏贵信号':'<4.0% 偏贵';
+  setBar('bar-did',didS,20); setPts('pts-did',didS,20); setDesc('desc-did',`DID=${did}% 百分位${isNaN(didPct)?'--':didPct}% · ${didLabel}`);
+  lines.push(`股息率DID=${did}% → ${didS}/20`); valTotal+=didS;
+
+  // ── 2. 股债利差 (16分) ──
+  let spS = spread>=3.5 ? 16 : spread>=3.0 ? 13 : spread>=2.5 ? 10 : spread>=1.5 ? 5 : 1;
+  const spLabel = spread>=3.5?'≥3.5% 满分':spread>=2.5?'合理中枢':'偏低/偏贵区间';
+  setBar('bar-spread',spS,16); setPts('pts-spread',spS,16); setDesc('desc-spread',`利差${spread.toFixed(3)}% · ${spLabel}`);
+  lines.push(`股债利差=${spread.toFixed(3)}% → ${spS}/16`); valTotal+=spS;
+
+  // ── 3. 10Y国债 (10分) ──
+  let bondS = cn10y<=1.8 ? 10 : cn10y<=2.0 ? 7 : cn10y<=2.3 ? 5 : cn10y<=2.5 ? 3 : 1;
+  setBar('bar-bond',bondS,10); setPts('pts-bond',bondS,10); setDesc('desc-bond',`CN10Y=${cn10y}% · ${cn10y<=1.8?'极低利率 利好股票资产':cn10y<=2.3?'正常区间':'偏高 压制估值'}`);
+  lines.push(`CN10Y=${cn10y}% → ${bondS}/10`); valTotal+=bondS;
+
+  // ── 4. PB百分位 (10分) ──
+  let pbS = 0, pbLabel='未填入';
+  if(!isNaN(pbPct)){
+    pbS = pbPct<=20?10: pbPct<=35?8: pbPct<=50?6: pbPct<=65?4: pbPct<=80?2:0;
+    pbLabel = pbPct<=20?'历史极低位':pbPct<=35?'历史低位':pbPct<=50?'中低位':pbPct<=65?'中位':pbPct<=80?'偏高':'历史高位';
+  }
+  setBar('bar-pb',pbS,10); setPts('pts-pb',pbS,10); setDesc('desc-pb',`PB百分位${isNaN(pbPct)?'--':pbPct}% · ${pbLabel}`);
+  lines.push(`PB百分位=${isNaN(pbPct)?'--':pbPct}% → ${pbS}/10`); valTotal+=pbS;
+
+  // ── 5. ROE (4分) ──
+  let roeS = 0, roeLabel='未填入';
+  if(!isNaN(roe)){
+    roeS = roe>=12?4: roe>=10?3: roe>=8?2: roe>=6?1:0;
+    roeLabel = roe>=12?'优质 ≥12%':roe>=10?'良好 10%~12%':roe>=8?'一般 8%~10%':roe>=6?'偏低 6%~8%':'较弱 <6%';
+  }
+  setBar('bar-roe',roeS,4); setPts('pts-roe',roeS,4); setDesc('desc-roe',`成分股ROE=${isNaN(roe)?'--':roe}% · ${roeLabel}`);
+  lines.push(`ROE=${isNaN(roe)?'--':roe}% → ${roeS}/4`); valTotal+=roeS;
+
+  document.getElementById('subtotal-val').textContent = `${valTotal} / 60`;
+  document.getElementById('subtotal-val').style.color = scoreColor(valTotal,60);
+  total += valTotal;
+
+  // ── 6. 价格与均线 (10分) ──
+  let maS=5, maDesc='未填入完整均线数据';
+  if(!isNaN(price)&&!isNaN(sma250)){
+    const dev=(price-sma250)/sma250*100;
+    if(price>sma250&&dev>10)   { maS=1; maDesc=`价格偏离SMA250 +${dev.toFixed(1)}% 偏贵`; }
+    else if(price>sma250&&dev<=10) { maS=3; maDesc=`价格高于SMA250 +${dev.toFixed(1)}% 合理中枢上沿`; }
+    else if(!isNaN(sma60)&&price>sma60&&price<sma250) { maS=6; maDesc=`价格在SMA60~SMA250之间`; }
+    else if(dev>-10) { maS=8; maDesc=`跌破SMA250后${dev.toFixed(1)}% 回踩支撑 便宜信号`; }
+    else { maS=10; maDesc=`大幅跌破SMA250 ${dev.toFixed(1)}% 深度超跌`; }
+  }
+  setBar('bar-ma',maS,10); setPts('pts-ma',maS,10); setDesc('desc-ma',maDesc);
+  lines.push(`价格与均线 → ${maS}/10`); techTotal+=maS;
+
+  // ── 7. Fibonacci (6分) ──
+  const fibMap={'above_0382':1,'near_05':4,'golden':5,'deep':6,'extreme':6};
+  const fibDescMap={'above_0382':'高于0.382 回调不充分','near_05':'0.382~0.618 0.5附近','golden':'0.618~0.786 黄金回调区','deep':'0.786~1.000 深度回调区★','extreme':'1.000+ 极限扩展区★★'};
+  const fibS = fibZone ? fibMap[fibZone] : 3;
+  setBar('bar-fib',fibS,6); setPts('pts-fib',fibS,6); setDesc('desc-fib',fibZone?fibDescMap[fibZone]:'未选择');
+  lines.push(`Fibonacci → ${fibS}/6`); techTotal+=fibS;
+
+  // ── 8. 脉冲MACD (7分) ──
+  let macdS=0, macdDesc='未选择';
+  if(macdC==='red'){macdS=0;macdDesc='Red极弱/恐慌抛售 → 0分';}
+  else if(macdC==='orange'){macdS=macdPos==='above_near'?2:1;macdDesc=`Orange偏空 → ${macdS}/7`;}
+  else if(macdC==='green'){macdS=macdPos==='below_near'?5:3;macdDesc=`Green偏多 → ${macdS}/7`;}
+  else if(macdC==='lime'){macdS=macdPos==='above_far'?3:macdPos==='above_near'?6:7;macdDesc=`Lime极强 → ${macdS}/7`;}
+  else if(macdC==='none'){
+    if(macdPrev==='lime'||macdPrev==='green'){macdS=2;macdDesc=`无色震荡，上一根为${macdPrev==='lime'?'Lime':'Green'}（偏多）→ 2/7`;}
+    else{macdS=0;macdDesc=`无色震荡，上一根为${macdPrev||'未选择'}（偏空/未知）→ 0/7`;}
+  }
+  setBar('bar-macd',macdS,7); setPts('pts-macd',macdS,7); setDesc('desc-macd',macdDesc);
+  lines.push(`脉冲MACD → ${macdS}/7`); techTotal+=macdS;
+
+  // ── 9. Andean (5分) ──
+  let andS=0, andDesc='未填入';
+  if(andTrend==='bear_zero'){andS=5;andDesc='红线=0 空头消失 → 5/5';}
+  else if(andTrend==='bull_cross'){andS=4;andDesc='绿线上穿红线 多头信号 → 4/5';}
+  else if(andTrend==='bull_above'){andS=3;andDesc='绿>红 多头主导 → 3/5';}
+  else if(andTrend==='bull_lt_bear'){andS=2;andDesc='绿>0且<红 多头弱 → 2/5';}
+  else if(andTrend==='bull_zero'){andS=0;andDesc='绿线=0 多头消失 → 0/5';}
+  else if(!isNaN(bull)&&!isNaN(bear)){
+    if(bull===0){andS=0;andDesc='bull=0 多头消失 → 0/5';}
+    else if(bear===0){andS=5;andDesc='bear=0 空头消失 → 5/5';}
+    else if(bull<bear){andS=2;andDesc=`bull(${bull})<bear(${bear}) 多头弱 → 2/5`;}
+    else{andS=1;andDesc=`bull>bear 但空头仍存 → 1/5`;}
+  }
+  setBar('bar-andean',andS,5); setPts('pts-andean',andS,5); setDesc('desc-andean',andDesc);
+  lines.push(`动能强弱 → ${andS}/5`); techTotal+=andS;
+
+  // ── 10. 挤压动量 (6分) ──
+  let sqzS=0, sqzDesc='未选择';
+  if(sqzC==='lime'&&sqzDot==='gray'){sqzS=6;sqzDesc='Lime+灰点 行情启动 → 6/6';}
+  else if(sqzC==='red'){sqzS=0;sqzDesc='Red下跌加速 → 0/6';}
+  else if(sqzC==='green'&&sqzDot==='black'){sqzS=0;sqzDesc='Green+黑点 蓄力中 → 0/6';}
+  else if(sqzC==='maroon'){sqzS=sqzDot==='gray'?4:3;sqzDesc=`Maroon下跌减速 → ${sqzS}/6`;}
+  else if(sqzC==='green'&&sqzDot==='gray'){sqzS=2;sqzDesc='Green+灰点 上涨减速 → 2/6';}
+  setBar('bar-sqz',sqzS,6); setPts('pts-sqz',sqzS,6); setDesc('desc-sqz',sqzDesc);
+  lines.push(`挤压动量 → ${sqzS}/6`); techTotal+=sqzS;
+
+  // ── 11. RSI (3分) ──
+  let rsiS=0, rsiDesc='未填入';
+  if(!isNaN(rsi)){
+    rsiS = rsi<=30?3: rsi<=40?2: rsi<=50?1: 0;
+    rsiDesc = rsi<=30?`RSI=${rsi} 超卖区 → 3/3`: rsi<=40?`RSI=${rsi} 低位区 → 2/3`: rsi<=50?`RSI=${rsi} 中性偏低 → 1/3`: `RSI=${rsi} 中高位 → 0/3`;
+  }
+  setBar('bar-rsi',rsiS,3); setPts('pts-rsi',rsiS,3); setDesc('desc-rsi',rsiDesc);
+  lines.push(`RSI=${isNaN(rsi)?'--':rsi} → ${rsiS}/3`); techTotal+=rsiS;
+
+  // ── 12. 成交量 (3分) ──
+  const volMap={'shrink':3,'flat':1,'mild':2,'surge':0};
+  const volDescMap={'shrink':'缩量回调 量比≤0.8 → 3/3','flat':'平量震荡 量比0.9~1.1 → 1/3','mild':'温和放量下跌 → 2/3','surge':'大幅放量下跌 → 0/3'};
+  const volS = volState ? volMap[volState] : 1;
+  setBar('bar-vol',volS,3); setPts('pts-vol',volS,3); setDesc('desc-vol',volState?volDescMap[volState]:'未选择(默认1/3)');
+  lines.push(`成交量 → ${volS}/3`); techTotal+=volS;
+
+  document.getElementById('subtotal-tech').textContent = `${techTotal} / 40`;
+  document.getElementById('subtotal-tech').style.color = scoreColor(techTotal,40);
+  total = valTotal + techTotal;
+
+  // ── 更新总分显示 ──
+  document.getElementById('hero-score').textContent = total;
+  document.getElementById('hero-score').style.color = total>=70?'#059669':total>=60?'#d97706':'#dc2626';
+  document.getElementById('hero-bar').style.width = Math.min(total,100)+'%';
+  document.getElementById('total-display').textContent = `${total} / 100`;
+  document.getElementById('total-display').style.color = total>=70?'#059669':total>=60?'#d97706':'#dc2626';
+
+  // ── 评级与标签 ──
+  let level='', badgeBg='', badgeTxt='', pillBg='', pillTxt='', pillDot='';
+  if(total>=85){level='极强买入';badgeBg='#d1fae5';badgeTxt='#065f46';pillBg='#d1fae5';pillTxt='#065f46';pillDot='#059669';}
+  else if(total>=70){level='强买入';badgeBg='#d1fae5';badgeTxt='#065f46';pillBg='#d1fae5';pillTxt='#065f46';pillDot='#22c55e';}
+  else if(total>=60){level='中性偏多';badgeBg='#fef3c7';badgeTxt='#92400e';pillBg='#fef3c7';pillTxt='#92400e';pillDot='#d97706';}
+  else if(total>=45){level='中性观望';badgeBg='#fef3c7';badgeTxt='#92400e';pillBg='#fef3c7';pillTxt='#92400e';pillDot='#f59e0b';}
+  else if(total>=30){level='偏贵信号';badgeBg='#fee2e2';badgeTxt='#991b1b';pillBg='#fee2e2';pillTxt='#991b1b';pillDot='#ef4444';}
+  else{level='高估警示';badgeBg='#fee2e2';badgeTxt='#991b1b';pillBg='#fee2e2';pillTxt='#991b1b';pillDot='#dc2626';}
+
+  const badge = document.getElementById('header-badge');
+  badge.textContent = level; badge.style.background=badgeBg; badge.style.color=badgeTxt;
+  const pill = document.getElementById('hero-pill');
+  pill.style.background=pillBg; pill.style.color=pillTxt;
+  pill.innerHTML=`<span class="verdict-dot" style="background:${pillDot};"></span>${level} · ${total}分`;
+
+  // ── 更新 KPI ──
+  if(!isNaN(price)){ document.getElementById('kpi-price').textContent=price; document.getElementById('kpi-price-sub').textContent='今日收盘价（元）'; }
+  if(!isNaN(did)){   document.getElementById('kpi-did').textContent=did+'%'; document.getElementById('kpi-did-sub').textContent=`百分位 ${isNaN(didPct)?'--':didPct}%`; }
+  if(!isNaN(cn10y)){ document.getElementById('kpi-cn10y').textContent=cn10y+'%'; document.getElementById('kpi-cn10y-sub').textContent='10Y国债收益率'; }
+  document.getElementById('kpi-spread').textContent=spread.toFixed(3)+'%';
+  document.getElementById('box-cn10y').textContent=cn10y+'%';
+  document.getElementById('box-did').textContent=did+'%';
+  document.getElementById('box-spread').textContent=spread.toFixed(3)+'%';
+
+  // ── 更新仪表盘 ──
+  const didPtr = Math.min(95, Math.max(5, didPct||50));
+  document.getElementById('did-pointer').style.left = didPtr+'%';
+  document.getElementById('did-gauge-label').textContent = `DID ${did}% · 百分位 ${isNaN(didPct)?'--':didPct}%`;
+  const spPct = Math.min(95, Math.max(5, (spread/5)*100));
+  document.getElementById('spread-pointer').style.left = spPct+'%';
+  document.getElementById('spread-gauge-label').textContent = `利差 ${spread.toFixed(3)}% · ${spread>=3.5?'历史高位满分':spread>=2.5?'合理中枢':'偏低区间'}`;
+
+  // ── 更新均线表 ──
+  if(!isNaN(price)&&(!isNaN(sma60)||!isNaN(sma120)||!isNaN(sma250))){
+    const rows=[
+      {name:'SMA60',color:'#f59e0b',val:sma60},
+      {name:'SMA120',color:'#3b82f6',val:sma120},
+      {name:'SMA250',color:'#ef4444',val:sma250}
+    ].filter(r=>!isNaN(r.val));
+    document.getElementById('ma-tbody').innerHTML = rows.map(r=>{
+      const dev=((price-r.val)/r.val*100).toFixed(2);
+      const above=price>r.val;
+      return `<tr>
+        <td><span style="font-weight:600;color:${r.color};">${r.name}</span></td>
+        <td><span style="font-family:'JetBrains Mono',monospace;">${r.val}</span></td>
+        <td style="color:${above?'#059669':'#dc2626'};font-family:'JetBrains Mono',monospace;">${above?'+':''}${dev}%</td>
+        <td><span class="${above?'tag-above':'tag-below'}">${above?'上方':'下方'}</span></td>
+      </tr>`;
+    }).join('') + `<tr>
+      <td><span style="font-weight:600;color:#7c3aed;">当前价</span></td>
+      <td><span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:#dc2626;">${price}</span></td>
+      <td>—</td>
+      <td style="font-size:10px;font-weight:600;color:${maS>=8?'#059669':maS>=5?'#d97706':'#dc2626'};white-space:normal;word-break:break-all;">${maDesc.split('·')[0].trim()}</td>
+    </tr>`;
+  }
+
+  // ── 更新Fibonacci图 ──
+  if(!isNaN(fibHigh)&&!isNaN(fibLow)&&!isNaN(price)){
+    const range=fibHigh-fibLow;
+    const levels=[
+      {r:0,label:'0.000',bg:'#dc2626',badge:'badge-red',tag:'高点'},
+      {r:0.236,label:'0.236',bg:'#f59e0b',badge:'badge-amber',tag:'压力'},
+      {r:0.382,label:'0.382',bg:'#f59e0b',badge:'badge-amber',tag:'压力'},
+      {r:0.500,label:'0.500',bg:'#6b7280',badge:'badge-gray',tag:'中轴'},
+      {r:0.618,label:'0.618',bg:'#059669',badge:'badge-green',tag:'黄金位'},
+      {r:0.786,label:'0.786',bg:'#34d399',badge:'badge-green',tag:'强支撑'},
+      {r:1.000,label:'1.000',bg:'#2563eb',badge:'badge-blue',tag:'前低'},
+      {r:1.214,label:'1.214',bg:'#7c2d12',badge:'badge-amber',tag:'扩展位'},
+      {r:1.382,label:'1.382',bg:'#dc2626',badge:'badge-red',tag:'极限位'},
+    ];
+    document.getElementById('fib-range-label').textContent=`高点${fibHigh} → 低点${fibLow}`;
+    let html='';
+    let inserted=false;
+    for(let i=0;i<levels.length;i++){
+      const lv=levels[i];
+      const px=(fibHigh-lv.r*range).toFixed(3);
+      const barPct=Math.max(5,100-Math.round(lv.r*100/1.382*80));
+      // insert current price marker
+      if(!inserted&&parseFloat(px)<=price){
+        html+=`<div class="fib-row" style="margin:4px 0;">
+          <div class="fib-label" style="color:#7c3aed;font-size:11px;">▶ 当前</div>
+          <div class="fib-bar-wrap"><div class="fib-bar-fill" style="width:${Math.max(5,barPct+5)}%;background:#7c3aed;"></div></div>
+          <div class="fib-price" style="color:#7c3aed;">${price}</div>
+          <span class="fib-badge badge-now">在此</span>
+        </div>`;
+        inserted=true;
+      }
+      html+=`<div class="fib-row">
+        <div class="fib-label" style="color:${lv.r<=0.618?'var(--text-secondary)':'#059669'}">${lv.label}</div>
+        <div class="fib-bar-wrap"><div class="fib-bar-fill" style="width:${barPct}%;background:${lv.bg};"></div></div>
+        <div class="fib-price" style="color:${lv.bg};">${px}</div>
+        <span class="fib-badge ${lv.badge}">${lv.tag}</span>
+      </div>`;
+    }
+    document.getElementById('fib-rows').innerHTML=html;
+  }
+
+  // ── 更新动能指标行 ──
+  const indHtml=`
+  <div class="ind-row">
+    <div class="ind-dot ${macdS===0?'red':macdS>=5?'green':'amber'}"></div>
+    <div class="ind-content">
+      <h4>脉冲MACD（4H）</h4>
+      <p>${macdDesc}；状态：${macdC||'未选择'}</p>
+    </div>
+  </div>
+  <div class="ind-row">
+    <div class="ind-dot ${andS===0?'red':andS>=3?'green':'amber'}"></div>
+    <div class="ind-content">
+      <h4>动能强弱指标 Andean（4H）</h4>
+      <p>${andDesc}</p>
+    </div>
+  </div>
+  <div class="ind-row">
+    <div class="ind-dot ${sqzS===0?'red':sqzS>=4?'green':'amber'}"></div>
+    <div class="ind-content">
+      <h4>挤压动量指标（4H）</h4>
+      <p>${sqzDesc}；中轴：${sqzDot||'未选择'}</p>
+    </div>
+  </div>`;
+  document.getElementById('indicator-rows').innerHTML=indHtml;
+
+  // ── 综合研判 ──
+  const bullItems=[], bearItems=[];
+  if(didS>=13) bullItems.push('DID股息率充裕，估值具吸引力');
+  else if(didS<=7) bearItems.push('DID股息率偏低，估值偏贵');
+  if(spS>=13) bullItems.push('股债利差处合理中枢以上，安全边际厚实');
+  if(bondS>=8) bullItems.push('CN10Y处低位区，利好股票资产估值');
+  if(pbS>=6) bullItems.push('PB百分位处历史低/中低位，有估值修复空间');
+  if(maS>=8) bullItems.push('价格跌破SMA250后深度回踩，属"便宜信号"区间');
+  if(fibS>=5) bullItems.push('Fibonacci处深度回调强支撑区，布局性价比高');
+  if(rsiS>=2) bullItems.push('RSI处于低位/超卖区，短线超跌信号');
+  if(volS>=3) bullItems.push('缩量回调，筹码松动有限，利于低吸');
+  if(macdS===0) bearItems.push('脉冲MACD为Red极弱，价格跌破下方缓冲区');
+  if(andS===0) bearItems.push('Andean绿线=0，多头能量完全消失');
+  if(sqzS===0) bearItems.push('挤压动量鲜红下跌加速，短线风险仍存');
+  if(volS===0) bearItems.push('大幅放量下跌，资金恐慌出逃信号');
+
+  const summaryHtml=`
+  <div class="analyst-block" style="background:#f0fdf4;border-color:#bbf7d0;margin-top:0;">
+    <h4 style="color:#065f46;">利多因素</h4>
+    ${bullItems.length?bullItems.map(t=>`<div class="analyst-item"><div class="analyst-dot green"></div><p>${t}</p></div>`).join(''):'<div class="analyst-item"><div class="analyst-dot gray"></div><p>暂无明显利多信号</p></div>'}
+  </div>
+  <div class="analyst-block" style="background:#fff7ed;border-color:#fed7aa;margin-top:8px;">
+    <h4 style="color:#92400e;">利空因素</h4>
+    ${bearItems.length?bearItems.map(t=>`<div class="analyst-item"><div class="analyst-dot red"></div><p>${t}</p></div>`).join(''):'<div class="analyst-item"><div class="analyst-dot gray"></div><p>暂无明显利空信号</p></div>'}
+  </div>
+  <div style="margin-top:10px;padding:10px 12px;background:#ede9fe;border-radius:8px;border:0.5px solid #c4b5fd;">
+    <p style="font-size:12px;font-weight:600;color:#5b21b6;">综合判断：${level}（${total}/100）</p>
+    <p style="font-size:11px;color:#6d28d9;margin-top:4px;line-height:1.6;">
+      估值面${valTotal}/60分，技术面${techTotal}/40分。
+      ${total>=70?'估值与技术面共振向好，可积极布局。':total>=60?'估值支撑充裕，技术面待确认，建议轻仓试探。':total>=45?'估值中性，技术面偏弱，建议持仓观望。':'整体偏弱，建议回避，等待更佳布局时机。'}
+    </p>
+  </div>`;
+  document.getElementById('summary-card').innerHTML='<div class="section-title">⑦ 综合研判</div>'+summaryHtml;
+
+
+  // ── 保存记录到持久化存储 ──
+  const dateVal = document.getElementById('header-date').value || new Date().toISOString().slice(0,10);
+  const titleEl515 = document.getElementById('etf-title');
+  const codeMatch515 = titleEl515 ? titleEl515.textContent.match(/\d{6}/) : null;
+  const etfCode515 = codeMatch515 ? codeMatch515[0] : '515180';
+  const spreadVal = (!isNaN(did)&&!isNaN(cn10y)) ? parseFloat((did-cn10y).toFixed(3)) : null;
+  saveRecord({
+    date: dateVal,
+    code: etfCode515,
+    total, valTotal, techTotal, level,
+    price: isNaN(price)?null:price,
+    did: isNaN(did)?null:did,
+    cn10y: isNaN(cn10y)?null:cn10y,
+    spread: spreadVal,
+    didPct: isNaN(didPct)?null:didPct,
+    pbPct: isNaN(pbPct)?null:pbPct,
+    roe: isNaN(roe)?null:roe
+  });
+
+  showMsg(`综合得分：<strong>${total}/100</strong>（估值${valTotal}+技术${techTotal}）<br>${lines.join(' | ')}`);
+}
+
+
+// ══════════════════════════════════════════
+// 持久化存储 & 历史记录 & 月度汇总
+// ══════════════════════════════════════════
+const STORAGE_KEY = 'dividend_etf_history';
+
+function loadHistory(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+function saveRecord(record){
+  const records = loadHistory();
+  const idx = records.findIndex(r => r.date === record.date);
+  if(idx >= 0) records[idx] = record;
+  else records.push(record);
+  records.sort((a,b) => a.date.localeCompare(b.date));
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); } catch(e){ console.error('存储失败:', e); }
+  renderHistory(records);
+}
+
+function renderHistory(records){
+  const wrap = document.getElementById('history-table-wrap');
+  if(!records || records.length === 0){
+    wrap.innerHTML = '<p style="font-size:12px;color:var(--text-muted);">暂无记录，计算评分后自动保存</p>';
+    return;
+  }
+  const sc = function(s){ return s>=70?'#059669':s>=60?'#d97706':'#dc2626'; };
+  let tbody = '';
+  const rev = [...records].reverse();
+  for(let i=0;i<rev.length;i++){
+    const r = rev[i];
+    const origIdx = records.length - 1 - i;
+    tbody += '<tr>';
+    tbody += '<td style="font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:6px 8px;border-top:.5px solid #f3f4f6;white-space:nowrap;">' + r.date + '</td>';
+    tbody += '<td style="font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:6px 8px;border-top:.5px solid #f3f4f6;white-space:nowrap;color:#7c3aed;font-weight:600;">' + (r.code||'515180') + '</td>';
+    tbody += '<td style="font-family:\'JetBrains Mono\',monospace;font-size:13px;font-weight:700;padding:6px 8px;border-top:.5px solid #f3f4f6;color:' + sc(r.total) + ';white-space:nowrap;">' + r.total + '</td>';
+    tbody += '<td style="font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:6px 8px;border-top:.5px solid #f3f4f6;white-space:nowrap;">' + r.valTotal + '/60</td>';
+    tbody += '<td style="font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:6px 8px;border-top:.5px solid #f3f4f6;white-space:nowrap;">' + r.techTotal + '/40</td>';
+    tbody += '<td style="font-size:11px;padding:6px 8px;border-top:.5px solid #f3f4f6;white-space:nowrap;color:' + sc(r.total) + ';">' + r.level + '</td>';
+    tbody += '<td style="font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:6px 8px;border-top:.5px solid #f3f4f6;white-space:nowrap;">' + (r.price||'--') + '</td>';
+    tbody += '<td style="font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:6px 8px;border-top:.5px solid #f3f4f6;white-space:nowrap;">' + (r.did!=null?r.did+'%':'--') + '</td>';
+    tbody += '<td style="font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:6px 8px;border-top:.5px solid #f3f4f6;white-space:nowrap;">' + (r.spread!=null?r.spread+'%':'--') + '</td>';
+    tbody += '<td style="padding:6px 8px;border-top:.5px solid #f3f4f6;text-align:center;">';
+    tbody += '<button onclick="deleteRecord(' + origIdx + ')" style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;" title="删除此条">🗑</button>';
+    tbody += '</td></tr>';
+  }
+  const th = 'text-align:left;font-size:10px;color:#6b7280;font-weight:600;padding:0 8px 6px;white-space:nowrap;';
+  wrap.innerHTML = '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%;max-width:calc(100vw - 64px);">'
+    + '<table style="width:100%;border-collapse:collapse;min-width:640px;">'
+    + '<thead><tr style="border-bottom:1.5px solid #e5e7eb;">'
+    + '<th style="' + th + '">日期</th>'
+    + '<th style="text-align:left;font-size:10px;color:#7c3aed;font-weight:600;padding:0 8px 6px;white-space:nowrap;">代码</th>'
+    + '<th style="' + th + '">总分</th>'
+    + '<th style="' + th + '">估值</th>'
+    + '<th style="' + th + '">技术</th>'
+    + '<th style="' + th + '">信号</th>'
+    + '<th style="' + th + '">价格</th>'
+    + '<th style="' + th + '">DID</th>'
+    + '<th style="' + th + '">股债利差</th>'
+    + '<th style="' + th + '">删除</th>'
+    + '</tr></thead>'
+    + '<tbody>' + tbody + '</tbody>'
+    + '</table></div>'
+    + '<p style="font-size:10px;color:var(--text-muted);margin-top:8px;">共 ' + records.length + ' 条记录 · 点击 🗑 删除单条 · 同日记录自动覆盖更新</p>';
+}
+
+function deleteRecord(idx){
+  const records = loadHistory();
+  if(idx < 0 || idx >= records.length) return;
+  const r = records[idx];
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  const info = r.date + ' · ' + (r.code||'515180') + ' · ' + r.total + '分';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:14px;padding:24px 20px;max-width:300px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.2);';
+  box.innerHTML = '<div style="font-size:28px;margin-bottom:10px;">🗑️</div>'
+    + '<p style="font-size:14px;font-weight:600;color:#111827;margin-bottom:6px;">删除此条记录？</p>'
+    + '<p style="font-size:12px;color:#6b7280;margin-bottom:20px;">' + info + '</p>'
+    + '<div style="display:flex;gap:10px;">'
+    + '<button id="del-cancel" style="flex:1;padding:10px;background:#f3f4f6;color:#374151;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">取消</button>'
+    + '<button id="del-confirm" style="flex:1;padding:10px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">确认删除</button>'
+    + '</div>';
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+  document.getElementById('del-cancel').onclick = function(){ document.body.removeChild(modal); };
+  document.getElementById('del-confirm').onclick = function(){
+    records.splice(idx, 1);
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); }catch(e){}
+    renderHistory(records);
+    document.body.removeChild(modal);
+  };
+}
+
+// ── 初始化时加载历史 ──
+(function(){
+  const records = loadHistory();
+  renderHistory(records);
+})();
+
+// ── 月度汇总分析 ──
+function showMonthly(){
+  const records = loadHistory();
+  if(records.length === 0){
+    document.getElementById('monthly-content').innerHTML = '<p style="font-size:12px;color:#6b7280;">暂无历史记录</p>';
+    document.getElementById('monthly-modal').style.display = 'block';
+    return;
+  }
+  const byMonth = {};
+  records.forEach(function(r){ const m=r.date.slice(0,7); if(!byMonth[m])byMonth[m]=[]; byMonth[m].push(r); });
+  const months = Object.keys(byMonth).sort().reverse();
+  const sc = function(s){ return s>=70?'#059669':s>=60?'#d97706':'#dc2626'; };
+  let html = '';
+  months.forEach(function(m){
+    const recs = byMonth[m];
+    const scores = recs.map(function(r){ return r.total; });
+    const avg = (scores.reduce(function(a,b){ return a+b; },0)/scores.length).toFixed(1);
+    const max = Math.max.apply(null,scores), min = Math.min.apply(null,scores);
+    const maxDay = recs.find(function(r){ return r.total===max; });
+    const minDay = recs.find(function(r){ return r.total===min; });
+    const firstVal=recs[0].valTotal, lastVal=recs[recs.length-1].valTotal;
+    const firstTech=recs[0].techTotal, lastTech=recs[recs.length-1].techTotal;
+    const valTrend=lastVal>firstVal?'↑上升':lastVal<firstVal?'↓下降':'→持平';
+    const techTrend=lastTech>firstTech?'↑上升':lastTech<firstTech?'↓下降':'→持平';
+    const didVals=recs.filter(function(r){return r.did!=null;}).map(function(r){return r.did;});
+    const avgDid=didVals.length?(didVals.reduce(function(a,b){return a+b;},0)/didVals.length).toFixed(2):'--';
+    const spreadVals=recs.filter(function(r){return r.spread!=null;}).map(function(r){return r.spread;});
+    const avgSpread=spreadVals.length?(spreadVals.reduce(function(a,b){return a+b;},0)/spreadVals.length).toFixed(3):'--';
+    const cn10yVals=recs.filter(function(r){return r.cn10y!=null;}).map(function(r){return r.cn10y;});
+    const avgCn10y=cn10yVals.length?(cn10yVals.reduce(function(a,b){return a+b;},0)/cn10yVals.length).toFixed(3):'--';
+    const levelCount={};
+    recs.forEach(function(r){levelCount[r.level]=(levelCount[r.level]||0)+1;});
+    const levelStr=Object.entries(levelCount).map(function(e){return e[0]+'x'+e[1];}).join('、');
+    const avgNum=parseFloat(avg);
+    const advice=avgNum>=70?'月均分>=70，强买入区，可持续积累仓位':avgNum>=60?'月均分60~69，中性偏多，分批轻仓':avgNum>=45?'月均分45~59，中性观望':'月均分<45，偏贵，减仓等待';
+    html += '<div style="background:#f9fafb;border-radius:10px;padding:12px;margin-bottom:12px;border:.5px solid #e5e7eb;">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
+      +'<span style="font-size:13px;font-weight:700;">'+m+'</span>'
+      +'<span style="font-family:monospace;font-size:18px;font-weight:700;color:'+sc(avgNum)+';">'+avg+' <span style="font-size:11px;color:#6b7280;">均分</span></span>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:8px;">'
+      +'<div style="background:#fff;border-radius:6px;padding:6px 8px;border:.5px solid #e5e7eb;"><div style="font-size:9px;color:#9ca3af;">复盘次数</div><div style="font-size:14px;font-weight:700;">'+recs.length+' 次</div></div>'
+      +'<div style="background:#fff;border-radius:6px;padding:6px 8px;border:.5px solid #e5e7eb;"><div style="font-size:9px;color:#9ca3af;">最高/最低</div><div style="font-size:12px;font-weight:700;"><span style="color:#059669;">'+max+'</span> / <span style="color:#dc2626;">'+min+'</span></div></div>'
+      +'<div style="background:#fff;border-radius:6px;padding:6px 8px;border:.5px solid #e5e7eb;"><div style="font-size:9px;color:#9ca3af;">DID均值</div><div style="font-size:14px;font-weight:700;color:#059669;">'+avgDid+'%</div></div>'
+      +'<div style="background:#fff;border-radius:6px;padding:6px 8px;border:.5px solid #e5e7eb;"><div style="font-size:9px;color:#9ca3af;">股债利差均值</div><div style="font-size:14px;font-weight:700;color:#d97706;">'+avgSpread+'%</div></div>'
+      +'<div style="background:#fff;border-radius:6px;padding:6px 8px;border:.5px solid #e5e7eb;grid-column:span 2;"><div style="font-size:9px;color:#9ca3af;">CN10Y均值</div><div style="font-size:14px;font-weight:700;color:#d97706;">'+avgCn10y+'%</div></div>'
+      +'</div>'
+      +'<div style="font-size:11px;color:#374151;margin-bottom:6px;">估值面趋势：<strong>'+valTrend+'</strong>（'+firstVal+'→'+lastVal+'）　技术面趋势：<strong>'+techTrend+'</strong>（'+firstTech+'→'+lastTech+'）</div>'
+      +'<div style="font-size:11px;color:#374151;margin-bottom:6px;">信号分布：'+levelStr+'</div>'
+      +'<div style="font-size:11px;color:#374151;margin-bottom:6px;">最高：'+maxDay.date+'（'+max+'分）· 最低：'+minDay.date+'（'+min+'分）</div>'
+      +'<div style="background:#ede9fe;border-radius:6px;padding:6px 10px;font-size:11px;color:#5b21b6;">'+advice+'</div>'
+      +'</div>';
+  });
+  document.getElementById('monthly-content').innerHTML = html;
+  document.getElementById('monthly-modal').style.display = 'block';
+}
+
+// ── 导出CSV ──
+function exportCSV(){
+  const records = loadHistory();
+  if(records.length === 0){ alert('暂无记录可导出'); return; }
+  const header = ['日期','代码','总分','估值分','技术分','信号','价格','DID(%)','CN10Y(%)','股债利差(%)','DID百分位(%)','PB百分位(%)','ROE(%)'];
+  const rows = records.map(function(r){
+    return [r.date,r.code||'515180',r.total,r.valTotal,r.techTotal,r.level,
+      r.price||'',r.did!=null?r.did:'',r.cn10y!=null?r.cn10y:'',
+      r.spread!=null?r.spread:'',r.didPct||'',r.pbPct||'',r.roe||''];
+  });
+  const csv = [header].concat(rows).map(function(r){ return r.join(','); }).join('\n');
+  const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='红利低波ETF_评分记录_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ── 清除全部历史 ──
+function clearHistory(){
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:14px;padding:24px 20px;max-width:300px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.2);';
+  box.innerHTML = '<div style="font-size:32px;margin-bottom:12px;">🗑️</div>'
+    +'<p style="font-size:14px;font-weight:600;color:#111827;margin-bottom:8px;">确定清除所有记录？</p>'
+    +'<p style="font-size:12px;color:#6b7280;margin-bottom:20px;">此操作不可恢复</p>'
+    +'<div style="display:flex;gap:10px;">'
+    +'<button id="clear-cancel" style="flex:1;padding:10px;background:#f3f4f6;color:#374151;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">取消</button>'
+    +'<button id="clear-confirm" style="flex:1;padding:10px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">确认清除</button>'
+    +'</div>';
+  modal.appendChild(box);
+  document.body.appendChild(modal);
+  document.getElementById('clear-cancel').onclick = function(){ document.body.removeChild(modal); };
+  document.getElementById('clear-confirm').onclick = function(){
+    try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+    renderHistory([]);
+    document.body.removeChild(modal);
+  };
+}
+
+
+
+
+// ── 显示消息 ──
+function showMsg(html){
+  const el = document.getElementById('calcResult');
+  document.getElementById('calcText').innerHTML = html;
+  el.classList.add('show');
+  el.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+</script>
+</body>
+</html>
