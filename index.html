@@ -1034,9 +1034,10 @@ function calcScore(){
   const titleEl515 = document.getElementById('etf-title');
   const codeMatch515 = titleEl515 ? titleEl515.textContent.match(/\d{6}/) : null;
   const etfCode515 = codeMatch515 ? codeMatch515[0] : '515180';
+  const etfTitle515 = titleEl515 ? titleEl515.textContent.trim() : '红利ETF易方达 · 515180';
   const spreadVal = (!isNaN(did)&&!isNaN(cn10y)) ? parseFloat((did-cn10y).toFixed(3)) : null;
   saveRecord({
-    date: dateVal, code: etfCode515,
+    date: dateVal, code: etfCode515, title: etfTitle515,
     total, valTotal, techTotal, level,
     // ── 摘要字段（用于历史表格展示）──
     price: isNaN(price)?null:price,
@@ -1307,6 +1308,10 @@ function loadRecord(idx){
   // 还原日期
   const headerDate = document.getElementById('header-date');
   if(headerDate) headerDate.value = r.date;
+
+  // 还原标题
+  const titleEl = document.getElementById('etf-title');
+  if(titleEl && r.title) titleEl.textContent = r.title;
 
   // 更新自动计算字段
   if(typeof updateSpread === 'function') updateSpread();
