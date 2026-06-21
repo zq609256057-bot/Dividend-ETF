@@ -45,7 +45,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 .fib-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;flex-shrink:0;white-space:nowrap}
 .bg-green{background:#d1fae5;color:#065f46}.bg-amber{background:#fef3c7;color:#92400e}.bg-red{background:#fee2e2;color:#991b1b}.bg-blue{background:#dbeafe;color:#1e40af}.bg-gray{background:#f3f4f6;color:#6b7280}.bg-purple{background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd}
 .ma-table{width:100%;border-collapse:collapse;table-layout:fixed}
-.ma-table th{font-size:10px;color:var(--muted);font-weight:600;text-align:left;padding:0 6px 6px}
+.ma-table th{font-size:10px;color:var(--muted);font-weight:600;text-align:left;padding:0 6px 6px}.ma-table th:last-child{text-align:right}.ma-table td:last-child{text-align:right}
 .ma-table td{font-size:12px;padding:5px 6px;border-top:.5px solid #f3f4f6;overflow:hidden;text-overflow:ellipsis}
 .tag-below{background:#fee2e2;color:#991b1b;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600}
 .tag-above{background:#d1fae5;color:#065f46;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600}
@@ -169,7 +169,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 <!-- MA -->
 <div class="card">
 <div class="card-title">② 价格与均线结构</div>
-<table class="ma-table"><thead><tr><th>均线</th><th>均值</th><th>当前偏离</th><th>状态</th></tr></thead><tbody id="ma-tbody"><tr><td colspan="4" style="font-size:12px;color:var(--muted);padding:8px 6px">请先计算评分</td></tr></tbody></table>
+<table class="ma-table"><colgroup><col style="width:18%"><col style="width:22%"><col style="width:28%"><col style="width:32%"></colgroup><thead><tr><th>均线</th><th>均值</th><th>当前偏离</th><th style="text-align:right">状态</th></tr></thead><tbody id="ma-tbody"><tr><td colspan="4" style="font-size:12px;color:var(--muted);padding:8px 6px">请先计算评分</td></tr></tbody></table>
 </div>
 
 <!-- Fib -->
@@ -227,12 +227,12 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 <th style="padding:6px 8px;text-align:left;font-size:10px;color:var(--muted)">操作参考</th>
 </tr></thead>
 <tbody>
-<tr style="border-bottom:.5px solid #f3f4f6"><td style="padding:6px 8px;white-space:nowrap"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#059669;display:inline-block"></span>85~100</span></td><td style="padding:6px 8px;font-weight:700;color:#059669">强烈买入</td><td style="padding:6px 8px;color:#6b7280;font-size:11px">估值与技术共振，加速上涨，加大布局</td></tr>
-<tr style="border-bottom:.5px solid #f3f4f6"><td style="padding:6px 8px;white-space:nowrap"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#34d399;display:inline-block"></span>70~84</span></td><td style="padding:6px 8px;font-weight:700;color:#059669">强买入</td><td style="padding:6px 8px;color:#6b7280;font-size:11px">估值技术双优，积极布局分批入场</td></tr>
-<tr style="border-bottom:.5px solid #f3f4f6"><td style="padding:6px 8px;white-space:nowrap"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#d97706;display:inline-block"></span>60~69</span></td><td style="padding:6px 8px;font-weight:700;color:#d97706">中性偏多</td><td style="padding:6px 8px;color:#6b7280;font-size:11px">轻仓试探，等待技术确认后加仓</td></tr>
-<tr style="border-bottom:.5px solid #f3f4f6"><td style="padding:6px 8px;white-space:nowrap"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;display:inline-block"></span>45~59</span></td><td style="padding:6px 8px;font-weight:700;color:#d97706">中性观望</td><td style="padding:6px 8px;color:#6b7280;font-size:11px">持仓不动，耐心等待更好入场时机</td></tr>
-<tr style="border-bottom:.5px solid #f3f4f6"><td style="padding:6px 8px;white-space:nowrap"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#f87171;display:inline-block"></span>30~44</span></td><td style="padding:6px 8px;font-weight:700;color:#dc2626">中性偏空</td><td style="padding:6px 8px;color:#6b7280;font-size:11px">高估或技术偏弱，谨慎操作勿追高</td></tr>
-<tr><td style="padding:6px 8px;white-space:nowrap"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#dc2626;display:inline-block"></span>&lt;30</span></td><td style="padding:6px 8px;font-weight:700;color:#dc2626">高估警示</td><td style="padding:6px 8px;color:#6b7280;font-size:11px">满仓回避，静待估值与技术双双回落</td></tr>
+<tr style="border-bottom:.5px solid #f3f4f6"><td style="padding:4px 6px;white-space:nowrap;font-size:11px"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#059669;display:inline-block"></span>85~100</span></td><td style="padding:4px 6px;font-weight:700;color:#059669;white-space:nowrap;font-size:12px">强烈买入</td><td style="padding:4px 6px;color:#6b7280;font-size:10px;line-height:1.4">估值与技术共振，加速上涨，加大布局</td></tr>
+<tr style="border-bottom:.5px solid #f3f4f6"><td style="padding:4px 6px;white-space:nowrap;font-size:11px"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#34d399;display:inline-block"></span>70~84</span></td><td style="padding:4px 6px;font-weight:700;color:#059669;white-space:nowrap;font-size:12px">强买入</td><td style="padding:4px 6px;color:#6b7280;font-size:10px;line-height:1.4">估值技术双优，积极布局分批入场</td></tr>
+<tr style="border-bottom:.5px solid #f3f4f6"><td style="padding:4px 6px;white-space:nowrap;font-size:11px"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#d97706;display:inline-block"></span>60~69</span></td><td style="padding:4px 6px;font-weight:700;color:#d97706;white-space:nowrap;font-size:12px">中性偏多</td><td style="padding:4px 6px;color:#6b7280;font-size:10px;line-height:1.4">轻仓试探，等待技术确认后加仓</td></tr>
+<tr style="border-bottom:.5px solid #f3f4f6"><td style="padding:4px 6px;white-space:nowrap;font-size:11px"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;display:inline-block"></span>45~59</span></td><td style="padding:4px 6px;font-weight:700;color:#d97706;white-space:nowrap;font-size:12px">中性观望</td><td style="padding:4px 6px;color:#6b7280;font-size:10px;line-height:1.4">持仓不动，耐心等待更好入场时机</td></tr>
+<tr style="border-bottom:.5px solid #f3f4f6"><td style="padding:4px 6px;white-space:nowrap;font-size:11px"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#f87171;display:inline-block"></span>30~44</span></td><td style="padding:4px 6px;font-weight:700;color:#dc2626;white-space:nowrap;font-size:12px">中性偏空</td><td style="padding:4px 6px;color:#6b7280;font-size:10px;line-height:1.4">高估或技术偏弱，谨慎操作勿追高</td></tr>
+<tr><td style="padding:4px 6px;white-space:nowrap;font-size:11px"><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#dc2626;display:inline-block"></span>&lt;30</span></td><td style="padding:4px 6px;font-weight:700;color:#dc2626;white-space:nowrap;font-size:12px">高估警示</td><td style="padding:4px 6px;color:#6b7280;font-size:10px;line-height:1.4">满仓回避，静待估值与技术双双回落</td></tr>
 </tbody></table>
 </div>
 
@@ -438,7 +438,7 @@ var rows=[{name:'SMA60',color:'#f59e0b',val:sma60},{name:'SMA120',color:'#3b82f6
 g('ma-tbody').innerHTML=rows.map(function(r){var dv=((price-r.val)/r.val*100).toFixed(2);var ab=price>r.val;
 return '<tr><td><span style="font-weight:600;color:'+r.color+'">'+r.name+'</span></td><td><span style="font-family:monospace">'+r.val+'</span></td>'
 +'<td style="color:'+(ab?'#059669':'#dc2626')+';font-family:monospace">'+(ab?'+':'')+dv+'%</td>'
-+'<td><span class="'+(ab?'tag-above':'tag-below')+'">'+(ab?'上方':'下方')+'</span></td></tr>';
++'<td style="text-align:right"><span class="'+(ab?'tag-above':'tag-below')+'">'+(ab?'上方':'下方')+'</span></td></tr>';
 }).join('')+'<tr><td><span style="font-weight:600;color:#7c3aed">当前价</span></td><td style="font-family:monospace;font-weight:700;color:#dc2626">'+price+'</td><td>—</td><td style="font-size:10px;font-weight:600;color:'+sc(maS,10)+'">'+maDesc+'</td></tr>';}
 if(!isNaN(fibHigh)&&!isNaN(fibLow)&&!isNaN(price)){
 var range=fibHigh-fibLow;
@@ -500,7 +500,7 @@ rows+='<tr><td style="padding:5px 6px;font-size:11px;white-space:nowrap"><span o
 +'<td style="padding:5px 6px;font-size:13px;font-weight:700;color:'+sc(r.total,100)+'">'+r.total+'</td>'
 +'<td style="padding:5px 6px;font-size:11px">'+r.valTotal+'/60</td>'
 +'<td style="padding:5px 6px;font-size:11px">'+r.techTotal+'/40</td>'
-+'<td style="padding:5px 6px;font-size:11px;color:'+sc(r.total,100)+'">'+r.level+'</td>'
++'<td style="padding:5px 6px;font-size:10px;white-space:nowrap;color:'+sc(r.total,100)+'">'+r.level+'</td>'
 +'<td style="padding:5px 6px;font-size:11px">'+(r.price||'--')+'</td>'
 +'<td style="padding:5px 6px;text-align:center"><button onclick="deleteRecord('+oi+')" style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:13px">🗑</button></td></tr>';}
 wrap.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:420px">'
