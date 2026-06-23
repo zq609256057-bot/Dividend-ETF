@@ -120,6 +120,32 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 <div class="entry-field" id="prev-wrap" style="display:none"><label>上一根MACD颜色（无色时）</label><select id="e_macd_prev" onchange="this.classList.add('sel')"><option value="">请选择</option><option value="lime">🟢 Lime</option><option value="green">🌲 Green</option><option value="orange">🟠 Orange</option><option value="red">🔴 Red</option></select></div>
 <div class="entry-field"><label>挤压动量 柱状颜色</label><select id="e_sqz_color" onchange="this.classList.add('sel')"><option value="">请选择</option><option value="lime">🟢 亮绿（上涨加速）</option><option value="green">🌲 深绿（上涨减速）</option><option value="maroon">🟤 深红（下跌减速）</option><option value="red">🔴 鲜红（下跌加速）</option></select></div>
 <div class="entry-field"><label>挤压动量 中轴点颜色</label><select id="e_sqz_dot" onchange="this.classList.add('sel')"><option value="">请选择</option><option value="black">⚫ 黑色（蓄力）</option><option value="gray">⬜ 灰色（释放）</option><option value="blue">🔵 蓝色（无挤压）</option></select></div>
+<div style="grid-column:1/-1;margin-top:6px;padding:10px 12px;background:#faf5ff;border:.5px solid #e9d5ff;border-radius:10px">
+<div style="font-size:10px;font-weight:700;color:#7c3aed;margin-bottom:8px;letter-spacing:.3px">⚡ 底部转变信号（本K线刚发生转变时勾选）</div>
+<div style="display:flex;flex-direction:column;gap:7px">
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11.5px;color:#374151">
+<input type="checkbox" id="e_andean_just_cross" style="width:15px;height:15px;accent-color:#7c3aed;flex-shrink:0">
+<span>🌱 Andean 绿线(bull)本K线刚由 0 变为 &gt;0 &nbsp;<b style="color:#7c3aed">+2分</b></span></label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11.5px;color:#374151">
+<input type="checkbox" id="e_macd_just_green" style="width:15px;height:15px;accent-color:#7c3aed;flex-shrink:0">
+<span>🟢 MACD 本K线刚由红色变为深绿/亮绿 &nbsp;<b style="color:#7c3aed">+1分</b></span></label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11.5px;color:#374151">
+<input type="checkbox" id="e_sqz_just_maroon" style="width:15px;height:15px;accent-color:#7c3aed;flex-shrink:0">
+<span>🟤 Squeeze 本K线刚由鲜红变为栗色 &nbsp;<b style="color:#7c3aed">+1分</b>&nbsp;<span style="font-size:10px;color:#9ca3af">三项全选→保底8分</span></span></label>
+</div></div>
+<div style="grid-column:1/-1;margin-top:6px;padding:10px 12px;background:#fef2f2;border:.5px solid #fecaca;border-radius:10px">
+<div style="font-size:10px;font-weight:700;color:#dc2626;margin-bottom:8px;letter-spacing:.3px">🔻 顶部转变信号（本K线刚发生转变时勾选）</div>
+<div style="display:flex;flex-direction:column;gap:7px">
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11.5px;color:#374151">
+<input type="checkbox" id="e_andean_bear_cross" style="width:15px;height:15px;accent-color:#dc2626;flex-shrink:0">
+<span>🔴 Andean 红线(bear)本K线刚由 0 变为 &gt;0 &nbsp;<b style="color:#dc2626">-2分</b></span></label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11.5px;color:#374151">
+<input type="checkbox" id="e_macd_just_weak" style="width:15px;height:15px;accent-color:#dc2626;flex-shrink:0">
+<span>🟠 MACD 本K线刚由深绿/亮绿变为橙色/红色 &nbsp;<b style="color:#dc2626">-1分</b></span></label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11.5px;color:#374151">
+<input type="checkbox" id="e_sqz_just_green" style="width:15px;height:15px;accent-color:#dc2626;flex-shrink:0">
+<span>🌲 Squeeze 本K线刚由亮绿变为深绿 &nbsp;<b style="color:#dc2626">-1分</b>&nbsp;<span style="font-size:10px;color:#9ca3af">三项全选→上限2分</span></span></label>
+</div></div>
 </div>
 <div class="btn-row">
 <button class="btn-fill" onclick="autoFill()">⚡ 自动填入今日数据</button>
@@ -261,7 +287,7 @@ function gv(id){var el=g(id);return el?el.value:'';}
 var d=new Date();
 g('header-date').value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 renderScoreDecomp();
-cloudLoad().then(function(r){ renderHistory(r); });
+cloudLoad().then(function(r){ window._etfHistory=Array.isArray(r)?r:[]; renderHistory(r); });
 })();
 function togglePrev(){g('prev-wrap').style.display=gv('e_macd_color')==='none'?'block':'none';}
 function updateSpread(){
@@ -301,6 +327,7 @@ function sc(s,max){return s/max>=.7?'#059669':s/max>=.4?'#d97706':'#dc2626';}
 function sd(id,desc){var el=g('desc-'+id);if(el)el.textContent=desc;}
 function clearAll(){
 ['e_price','e_did','e_cn10y','e_did_pct','e_pb_pct','e_roe','e_sma60','e_sma120','e_sma250','e_rsi','e_vol_ratio','e_fib_high','e_fib_low','e_bull','e_bear'].forEach(function(id){var el=g(id);if(el)el.value='';});
+['e_andean_just_cross','e_macd_just_green','e_sqz_just_maroon','e_andean_bear_cross','e_macd_just_weak','e_sqz_just_green'].forEach(function(id){var el=g(id);if(el)el.checked=false;});
 ['e_fib_zone','e_macd_color','e_macd_pos','e_macd_prev','e_andean_trend','e_sqz_color','e_sqz_dot','e_vol_state'].forEach(function(id){var el=g(id);if(el){el.value='';el.classList.remove('sel');}});
 g('e_spread').value='';g('prev-wrap').style.display='none';
 var cr=g('calcResult');if(cr)cr.classList.remove('show');}
@@ -351,69 +378,63 @@ var fibUpMap={above_0382:7,near_05:6,golden:4,above_0786:2,b0786_1:1,b1_1382:1,a
 var fibS=fibZone?(fibDir==='up'?fibUpMap[fibZone]||0:fibDownMap[fibZone]||0):0;
 sb('fib',fibS,7);sp('fib',fibS,7);sd('fib',(fibDir==='up'?'阻力:':'支撑:')+(fibZone==='above_1382'?'1.382+极值':fibZone==='b1_1382'?'1~1.382':fibZone==='b0786_1'?'0.786~1':fibZone==='above_0786'?'0.786+':fibZone==='golden'?'黄金区':fibZone==='near_05'?'0.5区':'0.382以上'));techTotal+=fibS;
 // ====== 三指标联动评分（总18分）======
-// ====== MACD评分（满分4分）======
-var macdS=0,macdDesc='未选择';
-if(macdC==='red'){macdS=0;macdDesc='Red极弱→0';}
-else if(macdC==='orange'){macdS=macdPos==='above_near'?1:0;macdDesc='Orange→'+macdS;}
-else if(macdC==='green'){macdS=macdPos==='below_near'?4:2;macdDesc='Green→'+macdS;}
-else if(macdC==='lime'){macdS=macdPos==='above_far'?1:4;macdDesc='Lime→'+macdS;}
-else if(macdC==='none'){macdS=(macdPrev==='lime'||macdPrev==='green')?1:0;macdDesc='无色→'+macdS;}
-// ====== Andean评分（满分3分）======
-var andS=0,andDesc='未选择';
-if(andTrend==='bear_zero'){andS=3;andDesc='红线=0→3';}
-else if(andTrend==='bull_cross'){andS=2;andDesc='上穿→2';}
-else if(andTrend==='bull_above'){andS=2;andDesc='绿>红→2';}
-else if(andTrend==='bull_lt_bear'){andS=1;andDesc='多头弱→1';}
-else if(andTrend==='bull_zero'){andS=0;andDesc='绿=0→0';}
-if(!isNaN(bull)&&!isNaN(bear)){
-  if(bear===0||bear<0){andS=3;andDesc='红线=0/负→3';}
-  else if(bull<=0){andS=0;andDesc='绿线≤0→0';}
-  else if(bull>bear){
-    var ratio=bear/bull;
-    if(ratio<0.3){andS=3;andDesc='多头强 比例'+ratio.toFixed(2)+'→3';}
-    else if(ratio<0.6){andS=2;andDesc='多头中 比例'+ratio.toFixed(2)+'→2';}
-    else{andS=1;andDesc='多头弱 比例'+ratio.toFixed(2)+'→1';}
-  } else {andS=0;andDesc='红≥绿→0';}
-}
-// ====== Squeeze评分（满分3分）======
-var sqzS=0,sqzDesc='未选择';
-if(sqzC==='lime'&&sqzDot==='gray'){sqzS=3;sqzDesc='Lime+灰→3';}
-else if(sqzC==='lime'){sqzS=2;sqzDesc='Lime→2';}
-else if(sqzC==='green'&&sqzDot==='gray'){sqzS=2;sqzDesc='Green+灰→2';}
-else if(sqzC==='maroon'&&sqzDot==='gray'){sqzS=2;sqzDesc='Maroon+灰→2';}
-else if(sqzC==='maroon'){sqzS=1;sqzDesc='Maroon→1';}
-else if(sqzC==='green'&&sqzDot==='black'){sqzS=0;sqzDesc='蓄力中→0';}
-else if(sqzC==='green'){sqzS=1;sqzDesc='Green→1';}
-else if(sqzC==='red'){sqzS=0;sqzDesc='Red→0';}
-if(sqzC==='maroon'&&sqzS<1){sqzS=1;}
-// ====== 三指标联动（总分10分）======
+// ====== 三指标新评分体系（总10分：状态6分 + 转变4分）======
+// 读取转变加分勾选框
+var andeanJustCross=!!(g('e_andean_just_cross')&&g('e_andean_just_cross').checked);
+var macdJustGreen=!!(g('e_macd_just_green')&&g('e_macd_just_green').checked);
+var sqzJustMaroon=!!(g('e_sqz_just_maroon')&&g('e_sqz_just_maroon').checked);
+// 当前状态判断
+var macdLime=(macdC==='lime');
 var macdBull=(macdC==='lime'||macdC==='green');
 var macdWeak=(macdC==='orange'||macdC==='red');
-var andBullFlag=(!isNaN(bull)&&bull>0);
-var bearPositive=(!isNaN(bear)&&bear>0);
+var andBullPos=(!isNaN(bull)&&bull>0);
+var andBearZero=(isNaN(bear)||bear<=0);
 var sqzLime=(sqzC==='lime');
 var sqzGreen=(sqzC==='green');
 var sqzMaroon=(sqzC==='maroon');
-var sqzBull=(sqzLime||sqzGreen||sqzMaroon);
-var rawSum=macdS+andS+sqzS;
-var comboDesc='';
-if(macdBull&&andBullFlag&&sqzLime){
-  if(bearPositive){
-    if(rawSum>3){var r3=3/Math.max(rawSum,1);macdS=Math.floor(macdS*r3);andS=Math.floor(andS*r3);sqzS=Math.max(0,3-macdS-andS);}
-    comboDesc='⚠️共振bear>0，上限3分';
-  } else {
-    if(rawSum<8){var r8=8/Math.max(rawSum,1);macdS=Math.min(4,Math.round(macdS*r8));andS=Math.min(3,Math.round(andS*r8));sqzS=Math.min(3,8-macdS-andS);if(sqzS<0)sqzS=0;}
-    comboDesc='🔥三指标共振，最低8分';
-  }
-} else if(macdWeak&&bearPositive&&sqzGreen&&!sqzLime){
-  if(rawSum>2){macdS=1;andS=0;sqzS=1;}
-  comboDesc='🔴弱势组合，上限2分';
-} else {
-  var partialSync=(macdBull&&(andBullFlag||sqzBull))||(macdWeak&&andBullFlag&&sqzBull);
-  if(partialSync&&rawSum<5){var boost=5-rawSum;var each=Math.round(boost/3);macdS+=each;andS+=each;sqzS+=boost-each*2;if(sqzS<0)sqzS=0;comboDesc='⚡部分共振，最低5分';}
-}
-if(macdS>4)macdS=4;if(andS>3)andS=3;if(sqzS>3)sqzS=3;if(sqzS<0)sqzS=0;
-if(comboDesc)macdDesc+=' '+comboDesc;
+// ── 状态分（0~6分）──
+var stateScore=0,stateDesc='';
+if(macdLime&&andBullPos&&andBearZero&&sqzLime){
+  stateScore=6;stateDesc='亮绿+多无空+Lime→6';}
+else if(macdLime&&andBullPos&&sqzGreen){
+  stateScore=4;stateDesc='Lime+多+Green→4';}
+else if(macdBull&&andBullPos&&(sqzMaroon||sqzGreen)){
+  stateScore=3;stateDesc='Green+多+Maroon/Green→3';}
+else if(macdBull&&!andBullPos){
+  stateScore=1;stateDesc='MACD多但bull=0→1';}
+else{stateScore=0;stateDesc='偏空或中性→0';}
+// 读取顶部转变减分勾选框
+var andeanBearCross=!!(g('e_andean_bear_cross')&&g('e_andean_bear_cross').checked);
+var macdJustWeak=!!(g('e_macd_just_weak')&&g('e_macd_just_weak').checked);
+var sqzJustGreen=!!(g('e_sqz_just_green')&&g('e_sqz_just_green').checked);
+// ── 底部转变加分（0~4分）──
+var transBonus=0,transParts=[];
+if(andeanJustCross){transBonus+=2;transParts.push('Andean绿0→+2');}
+if(macdJustGreen){transBonus+=1;transParts.push('MACD红→绿+1');}
+if(sqzJustMaroon){transBonus+=1;transParts.push('Squeeze红→栗+1');}
+// ── 顶部转变减分（0~-4分）──
+var topPenalty=0,topParts=[],topCount=0;
+if(andeanBearCross){topPenalty-=2;topParts.push('Andean红0→-2');topCount++;}
+if(macdJustWeak){topPenalty-=1;topParts.push('MACD绿→橙/红-1');topCount++;}
+if(sqzJustGreen){topPenalty-=1;topParts.push('Squeeze亮绿→深绿-1');topCount++;}
+// 底部三重共振保底8分
+var bottomTriple=andeanJustCross&&macdJustGreen&&sqzJustMaroon;
+if(bottomTriple&&(stateScore+transBonus)<8){
+  transBonus=8-stateScore;transParts=['🔥底部三重共振，保底8分'];}
+// 顶部三重共振上限2分
+var topTriple=andeanBearCross&&macdJustWeak&&sqzJustGreen;
+var comboTotal=stateScore+transBonus+topPenalty;
+if(topTriple){comboTotal=Math.min(comboTotal,2);topParts=['🔻顶部三重共振，上限2分'];}
+comboTotal=Math.max(0,Math.min(10,comboTotal));
+var allParts=transParts.concat(topParts);
+var comboDesc=stateDesc+(allParts.length?' · '+allParts.join(' '):'');
+// 分配到三个指标（保持进度条各自显示）
+var macdS=Math.min(4,Math.round(comboTotal*0.4));
+var andS=Math.min(3,Math.round(comboTotal*0.3));
+var sqzS=Math.min(3,Math.max(0,comboTotal-macdS-andS));
+var macdDesc=comboDesc;
+var andDesc=andeanJustCross?'绿线0→>0 +2':(andBullPos?(andBearZero?'bull>0 bear=0':'bull>0'):'bull=0');
+var sqzDesc=sqzJustMaroon?'Red→栗色 +1':(sqzLime?'Lime':(sqzGreen?'Green':(sqzMaroon?'Maroon':'Red')));
 sb('macd',macdS,4);sp('macd',macdS,4);sd('macd',macdDesc);techTotal+=macdS;
 sb('andean',andS,3);sp('andean',andS,3);sd('andean',andDesc);techTotal+=andS;
 sb('sqz',sqzS,3);sp('sqz',sqzS,3);sd('sqz',sqzDesc);techTotal+=sqzS;
@@ -427,6 +448,41 @@ else if(!isNaN(volRatio)){volS=volRatio<=0.8?5:volRatio<=1.1?2:volRatio<=1.5?3:0
 sb('vol',volS,5);sp('vol',volS,5);sd('vol',volState==='shrink'?'缩量回调 看好':volState==='flat'?'平量震荡':volState==='mild_up'?'温和放量上涨':volState==='big_up'?'大幅放量':volState==='mild_down'?'温和缩量下跌':'大幅放量下跌');techTotal+=volS;
 g('subtotal-tech').textContent=techTotal+' / 40';g('subtotal-tech').style.color=sc(techTotal,40);
 total=valTotal+techTotal;
+// ====== 趋势动量加分（路线B）======
+var _hist=window._etfHistory||[];
+var _titleNow=g('etf-title')?g('etf-title').textContent.trim():'';
+var _cm=_titleNow.match(/\d{6}/);var _code=_cm?_cm[0]:'';
+var _sameCode=_hist.filter(function(r){return (r.code||'')===_code&&r._form;});
+var trendBonus=0,trendItems=[],trendCount=_sameCode.length;
+if(_sameCode.length>=1){
+  var _prev=_sameCode[_sameCode.length-1];var _pf=_prev._form;
+  function _pv(k){return parseFloat(_pf[k]);}
+  // RSI趋势
+  var _pRsi=_pv('e_rsi');
+  if(!isNaN(_pRsi)&&!isNaN(rsi)){
+    var _dRsi=rsi-_pRsi;
+    if(_dRsi<=-5&&rsi<=45){trendBonus+=1;trendItems.push('RSI↓'+_pRsi.toFixed(0)+'→'+rsi.toFixed(0)+' +1');}
+    else if(_dRsi>=5&&rsi>=55){trendBonus-=1;trendItems.push('RSI↑'+_pRsi.toFixed(0)+'→'+rsi.toFixed(0)+' -1');}
+    else{trendItems.push('RSI→'+rsi.toFixed(0)+'（平稳）');}
+  }
+  // DID趋势
+  var _pDid=_pv('e_did');
+  if(!isNaN(_pDid)&&!isNaN(did)){
+    var _dDid=did-_pDid;
+    if(_dDid>=0.1){trendBonus+=1;trendItems.push('DID↑'+_pDid.toFixed(2)+'%→'+did.toFixed(2)+'% +1');}
+    else if(_dDid<=-0.1){trendBonus-=1;trendItems.push('DID↓'+_pDid.toFixed(2)+'%→'+did.toFixed(2)+'% -1');}
+    else{trendItems.push('DID→'+did.toFixed(2)+'%（平稳）');}
+  }
+  // 股债利差趋势
+  var _pSpread=_pv('e_did')-_pv('e_cn10y');
+  if(!isNaN(_pSpread)&&!isNaN(spread)){
+    var _dSpread=spread-_pSpread;
+    if(_dSpread>=0.1){trendBonus+=1;trendItems.push('利差↑+'+_dSpread.toFixed(2)+'% +1');}
+    else if(_dSpread<=-0.1){trendBonus-=1;trendItems.push('利差↓'+_dSpread.toFixed(2)+'% -1');}
+  }
+  trendBonus=Math.max(-2,Math.min(3,trendBonus));
+}
+total=Math.max(0,Math.min(100,total+trendBonus));
 g('hero-score').textContent=total;g('hero-score').style.color=sc(total,100);
 g('hero-bar').style.width=Math.min(total,100)+'%';
 g('total-display').textContent=total+' / 100';g('total-display').style.color=sc(total,100);
@@ -506,13 +562,20 @@ g('summary-card').innerHTML='<div class="card-title">⑦ 综合研判</div>'
 +'<div class="analyst-block" style="background:#fff7ed;border-color:#fed7aa"><h4 style="color:#92400e">利空因素</h4>'+beh+'</div>'
 +'<div style="margin-top:8px;padding:10px 12px;background:#ede9fe;border-radius:8px;border:.5px solid #c4b5fd">'
 +'<p style="font-size:12px;font-weight:600;color:#5b21b6">综合判断：'+level+'（'+total+'/100）</p>'
-+'<p style="font-size:11px;color:#6d28d9;margin-top:4px">估值'+valTotal+'/60分，技术'+techTotal+'/40分。'+concl+'</p></div>';
++'<p style="font-size:11px;color:#6d28d9;margin-top:4px">估值'+valTotal+'/60分，技术'+techTotal+'/40分。'+concl+'</p></div>'
++(trendCount>0?'<div style="margin-top:8px;padding:8px 10px;background:#f8fafc;border-radius:8px;border:.5px solid #e2e8f0">'
++'<div style="display:flex;justify-content:space-between;align-items:center">'
++'<span style="font-size:11px;font-weight:700;color:#374151">📈 趋势动量（基于'+trendCount+'条历史）</span>'
++'<span style="font-size:12px;font-weight:700;color:'+(trendBonus>0?'#059669':trendBonus<0?'#dc2626':'#6b7280')+'">'+(trendBonus>0?'+':'')+trendBonus+'分</span></div>'
++'<div style="font-size:10px;color:#6b7280;margin-top:4px">'+trendItems.join(' · ')+'</div></div>'
+:'<div style="margin-top:8px;padding:7px 10px;background:#f8fafc;border-radius:8px;font-size:10px;color:#9ca3af">📈 趋势动量：暂无同代码历史记录，保存首条后启用</div>');
 var dateVal=g('header-date').value||new Date().toISOString().slice(0,10);
 var te=g('etf-title');var title=te?te.textContent.trim():'红利ETF易方达 · 515180';
 var cm=title.match(/\d{6}/);var code=cm?cm[0]:'515180';
 saveRecord({date:dateVal,code:code,title:title,total:total,valTotal:valTotal,techTotal:techTotal,level:level,
 price:isNaN(price)?null:price,did:isNaN(did)?null:did,cn10y:isNaN(cn10y)?null:cn10y,spread:parseFloat(spread.toFixed(3)),
-_form:(function(){var f={};['e_price','e_did','e_cn10y','e_did_pct','e_pb_pct','e_roe','e_sma60','e_sma120','e_sma250','e_rsi','e_vol_ratio','e_fib_high','e_fib_low','e_bull','e_bear','e_fib_zone','e_macd_color','e_macd_pos','e_macd_prev','e_andean_trend','e_sqz_color','e_sqz_dot','e_vol_state'].forEach(function(id){f[id]=gv(id);});return f;})()});
+_form:(function(){var f={};['e_price','e_did','e_cn10y','e_did_pct','e_pb_pct','e_roe','e_sma60','e_sma120','e_sma250','e_rsi','e_vol_ratio','e_fib_high','e_fib_low','e_bull','e_bear','e_fib_zone','e_macd_color','e_macd_pos','e_macd_prev','e_andean_trend','e_sqz_color','e_sqz_dot','e_vol_state'].forEach(function(id){f[id]=gv(id);});
+['e_andean_just_cross','e_macd_just_green','e_sqz_just_maroon','e_andean_bear_cross','e_macd_just_weak','e_sqz_just_green'].forEach(function(id){var el=g(id);f[id]=el?el.checked:false;});return f;})()});
 showMsg('综合得分：<strong>'+total+'/100</strong>（估值'+valTotal+'+技术'+techTotal+'）');}
 function loadHistory(){return[];}// legacy stub，实际用cloudLoad
 function saveRecord(rec){
@@ -596,6 +659,7 @@ if(idx<0||idx>=records.length)return;
 var r=records[idx];if(!r._form){showMsg('⚠️ 旧版记录无法回放');return;}
 var f=r._form;Object.keys(f).forEach(function(id){var el=g(id);if(el)el.value=f[id]||'';});
 ['e_fib_zone','e_macd_color','e_macd_pos','e_macd_prev','e_andean_trend','e_sqz_color','e_sqz_dot','e_vol_state'].forEach(function(id){var el=g(id);if(el&&f[id])el.classList.add('sel');});
+['e_andean_just_cross','e_macd_just_green','e_sqz_just_maroon','e_andean_bear_cross','e_macd_just_weak','e_sqz_just_green'].forEach(function(id){var el=g(id);if(el)el.checked=!!f[id];});
 var hd=g('header-date');if(hd)hd.value=r.date;
 var te=g('etf-title');if(te&&r.title)te.textContent=r.title;
 updateSpread();togglePrev();calcScore();
