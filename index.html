@@ -783,6 +783,53 @@ var url=URL.createObjectURL(blob);var a=document.createElement('a');
 a.href=url;a.download='红利ETF_评分记录_'+new Date().toISOString().slice(0,10)+'.csv';
 a.click();URL.revokeObjectURL(url);});} // end cloudLoad
 function showMsg(html){var el=g('calcResult');g('calcText').innerHTML=html;el.classList.add('show');el.scrollIntoView({behavior:'smooth',block:'nearest'});}
+// ── 数据助手自动填入（接收postMessage）──
+window.addEventListener('message', function(e) {
+  var d = e.data;
+  if (!d || d.type !== 'ETF_AUTOFILL') return;
+  var m = d.data;
+  function setField(id, val) {
+    var el = g(id);
+    if (el && val !== '' && val != null) { el.value = val; }
+  }
+  setField('e_price',   m.price);
+  setField('e_sma60',   m.sma60);
+  setField('e_sma120',  m.sma120);
+  setField('e_sma250',  m.sma250);
+  setField('e_rsi',     m.rsi);
+  setField('e_vol_ratio', m.volRatio);
+  setField('e_did',     m.did);
+  setField('e_did_pct', m.didPct);
+  setField('e_cn10y',   m.cn10y);
+  setField('e_pb_pct',  m.pbPct);
+  setField('e_roe',     m.roe);
+  setField('e_fib_high', m.fibHigh);
+  setField('e_fib_low',  m.fibLow);
+  setField('e_bull',    m.bull);
+  setField('e_bear',    m.bear);
+  // 更新标题代码
+  var te = g('etf-title');
+  if (te && m.code) {
+    var cur = te.textContent.trim();
+    if (cur === '·' || cur === ' · ') te.textContent = '红利ETF · ' + m.code;
+  }
+  updateSpread();
+  showMsg('✅ 数据助手已自动填入 ' + (m.code||'') + ' 的数据，请补充技术指标后计算评分', 'show');
+});
+// 页面加载时检查localStorage是否有待填数据
+(function checkAutofill(){
+  try {
+    var raw = localStorage.getItem('etf_autofill');
+    if (!raw) return;
+    var d = JSON.parse(raw);
+    if (d && d.code) {
+      localStorage.removeItem('etf_autofill');
+      setTimeout(function(){
+        window.dispatchEvent(new MessageEvent('message',{data:{type:'ETF_AUTOFILL',data:d}}));
+      }, 800);
+    }
+  } catch(e) {}
+})();
 </script>
 
 <!-- 数据来源 -->
