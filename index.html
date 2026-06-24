@@ -162,7 +162,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 <!-- Header -->
 <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
 <div style="flex:1;min-width:0">
-<h1 id="etf-title" contenteditable="true" spellcheck="false" style="font-size:20px;font-weight:700;outline:none;border-radius:6px;padding:2px 4px;margin-left:-4px;cursor:text" title="点击编辑标题">红利ETF易方达 · 515180</h1>
+<h1 id="etf-title" contenteditable="true" spellcheck="false" style="font-size:20px;font-weight:700;outline:none;border-radius:6px;padding:2px 4px;margin-left:-4px;cursor:text" title="点击编辑标题"> · </h1>
 <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;margin-top:4px">
 <div style="display:flex;align-items:center;gap:4px"><span style="font-size:12px;color:var(--muted)">多维量化看板 ·</span><input type="date" id="header-date" class="date-input"></div>
 <span id="header-badge" class="header-badge">填入数据后计算</span>
@@ -586,8 +586,8 @@ g('summary-card').innerHTML='<div class="card-title">⑦ 综合研判</div>'
 +'<div style="font-size:10px;color:#6b7280;margin-top:4px">'+trendItems.join(' · ')+'</div></div>'
 :'<div style="margin-top:8px;padding:7px 10px;background:#f8fafc;border-radius:8px;font-size:10px;color:#9ca3af">📈 趋势动量：暂无同代码历史记录，保存首条后启用</div>');
 var dateVal=g('header-date').value||new Date().toISOString().slice(0,10);
-var te=g('etf-title');var title=te?te.textContent.trim():'红利ETF易方达 · 515180';
-var cm=title.match(/\d{6}/);var code=cm?cm[0]:'515180';
+var te=g('etf-title');var title=te?te.textContent.trim():' · ';
+var cm=title.match(/\d{6}/);var code=cm?cm[0]:'';
 saveRecord({date:dateVal,code:code,title:title,total:total,valTotal:valTotal,techTotal:techTotal,level:level,
 price:isNaN(price)?null:price,did:isNaN(did)?null:did,cn10y:isNaN(cn10y)?null:cn10y,spread:parseFloat(spread.toFixed(3)),
 _form:(function(){var f={};['e_price','e_did','e_cn10y','e_did_pct','e_pb_pct','e_roe','e_sma60','e_sma120','e_sma250','e_rsi','e_vol_ratio','e_fib_high','e_fib_low','e_bull','e_bear','e_fib_zone','e_macd_color','e_macd_pos','e_macd_prev','e_andean_trend','e_sqz_color','e_sqz_dot','e_vol_state'].forEach(function(id){f[id]=gv(id);});
