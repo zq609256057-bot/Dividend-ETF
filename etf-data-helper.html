@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>红利ETF · 数据助手</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f3f4f6;--card:#fff;--border:#e5e7eb;
+  --purple:#7c3aed;--green:#059669;--red:#dc2626;--amber:#d97706;--blue:#2563eb;
+  --text:#111827;--muted:#6b7280;--sub:#9ca3af;
+}
+body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;min-height:100vh;padding:0 0 40px}
+
+/* ── 顶部 ── */
+.topbar{background:var(--purple);padding:14px 16px 12px;position:sticky;top:0;z-index:10}
+.topbar-inner{max-width:520px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
+.topbar h1{font-size:15px;font-weight:700;color:#fff;letter-spacing:.3px}
+.topbar-sub{font-size:11px;color:rgba(255,255,255,.7);margin-top:1px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#6ee7b7;display:inline-block;margin-right:5px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── 主体 ── */
+.main{max-width:520px;margin:0 auto;padding:14px 12px 0}
+
+/* ── ETF选择器 ── */
+.etf-bar{background:var(--card);border-radius:12px;border:.5px solid var(--border);padding:12px 14px;margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.etf-btn{padding:6px 12px;border-radius:8px;border:.5px solid var(--border);background:var(--bg);font-size:12px;font-weight:600;cursor:pointer;transition:.15s;color:var(--text);white-space:nowrap}
+.etf-btn.active{background:var(--purple);color:#fff;border-color:var(--purple)}
+.etf-custom{flex:1;min-width:90px;padding:6px 10px;border-radius:8px;border:.5px solid var(--border);font-size:12px;background:var(--bg);color:var(--text);outline:none}
+#btn-fetch{padding:6px 14px;border-radius:8px;background:var(--purple);color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+#btn-fetch:active{opacity:.8}
+
+/* ── 卡片 ── */
+.card{background:var(--card);border-radius:12px;border:.5px solid var(--border);padding:14px;margin-bottom:12px}
+.card-title{font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.card-title::before{content:'';display:inline-block;width:3px;height:13px;background:var(--purple);border-radius:2px}
+
+/* ── 数据网格 ── */
+.data-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.data-item{background:var(--bg);border-radius:8px;padding:9px 11px;border:.5px solid var(--border)}
+.data-label{font-size:10px;color:var(--muted);font-weight:600;margin-bottom:3px;white-space:nowrap}
+.data-value{font-size:17px;font-weight:700;font-family:'SF Mono','Courier New',monospace;color:var(--text)}
+.data-value.green{color:var(--green)}
+.data-value.red{color:var(--red)}
+.data-value.amber{color:var(--amber)}
+.data-value.purple{color:var(--purple)}
+.data-value.loading{color:var(--sub);font-size:13px;font-weight:400}
+.data-sub{font-size:10px;color:var(--sub);margin-top:2px}
+
+/* ── 一键填入按钮 ── */
+.fill-btn{width:100%;padding:13px;border-radius:12px;background:var(--purple);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.3px;transition:.15s}
+.fill-btn:active{transform:scale(.98);opacity:.9}
+.fill-btn:disabled{background:var(--sub);cursor:not-allowed}
+
+/* ── 状态提示 ── */
+.msg{padding:10px 12px;border-radius:8px;font-size:12px;margin-bottom:10px;display:none}
+.msg.show{display:block}
+.msg.ok{background:#ecfdf5;color:#065f46;border:.5px solid #a7f3d0}
+.msg.err{background:#fef2f2;color:#991b1b;border:.5px solid #fecaca}
+.msg.warn{background:#fffbeb;color:#92400e;border:.5px solid #fde68a}
+
+/* ── 手动补充区 ── */
+.manual-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.manual-item label{font-size:10px;color:var(--muted);font-weight:600;display:block;margin-bottom:3px}
+.manual-item input{width:100%;padding:7px 9px;border-radius:8px;border:.5px solid var(--border);font-size:13px;background:var(--bg);color:var(--text);font-family:'SF Mono','Courier New',monospace;outline:none}
+.manual-item input:focus{border-color:var(--purple)}
+
+/* ── 底部说明 ── */
+.footnote{text-align:center;font-size:10px;color:var(--sub);margin-top:16px;line-height:1.6}
+
+/* ── 跳转看板 ── */
+.goto-bar{background:var(--card);border-radius:12px;border:.5px solid var(--border);padding:12px 14px;display:flex;gap:8px;align-items:center}
+.goto-bar span{font-size:12px;color:var(--muted);flex:1}
+.goto-btn{padding:7px 14px;border-radius:8px;background:#ecfdf5;color:var(--green);border:.5px solid #a7f3d0;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div>
+      <div class="topbar h1" style="font-size:15px;font-weight:700;color:#fff">
+        <span class="status-dot" id="status-dot"></span>红利ETF · 数据助手
+      </div>
+      <div class="topbar-sub" id="fetch-time">点击「获取数据」开始</div>
+    </div>
+    <div style="font-size:20px">📊</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ETF选择 -->
+  <div class="etf-bar">
+    <button class="etf-btn active" onclick="selectETF('159307',this)">159307</button>
+    <button class="etf-btn" onclick="selectETF('515180',this)">515180</button>
+    <button class="etf-btn" onclick="selectETF('512890',this)">512890</button>
+    <input class="etf-custom" id="custom-code" placeholder="其他代码..." maxlength="6" inputmode="numeric">
+    <button id="btn-fetch" onclick="fetchData()">获取数据</button>
+  </div>
+
+  <div class="msg" id="msg"></div>
+
+  <!-- 自动计算数据 -->
+  <div class="card">
+    <div class="card-title">⚡ 自动获取（A类数据）</div>
+    <div class="data-grid">
+      <div class="data-item">
+        <div class="data-label">当前价格（元）</div>
+        <div class="data-value loading" id="d-price">--</div>
+        <div class="data-sub" id="d-name">待获取</div>
+      </div>
+      <div class="data-item">
+        <div class="data-label">RSI 14日</div>
+        <div class="data-value loading" id="d-rsi">--</div>
+        <div class="data-sub" id="d-rsi-sub"></div>
+      </div>
+      <div class="data-item">
+        <div class="data-label">SMA 60</div>
+        <div class="data-value loading" id="d-sma60">--</div>
+        <div class="data-sub" id="d-sma60-sub"></div>
+      </div>
+      <div class="data-item">
+        <div class="data-label">SMA 120</div>
+        <div class="data-value loading" id="d-sma120">--</div>
+        <div class="data-sub" id="d-sma120-sub"></div>
+      </div>
+      <div class="data-item">
+        <div class="data-label">SMA 250</div>
+        <div class="data-value loading" id="d-sma250">--</div>
+        <div class="data-sub" id="d-sma250-sub"></div>
+      </div>
+      <div class="data-item">
+        <div class="data-label">量比</div>
+        <div class="data-value loading" id="d-volratio">--</div>
+        <div class="data-sub" id="d-volratio-sub"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 手动补充数据（B类中可查询部分） -->
+  <div class="card">
+    <div class="card-title">✏️ 手动补充（需查询数据）</div>
+    <div style="font-size:10px;color:var(--sub);margin-bottom:8px">以下数据请从红色火箭小程序 / 同花顺手动填写</div>
+    <div class="manual-grid">
+      <div class="manual-item">
+        <label>股息率 DID (%)</label>
+        <input type="number" id="m-did" placeholder="e.g. 4.98" step="0.01">
+      </div>
+      <div class="manual-item">
+        <label>DID百分位·全历史 (%)</label>
+        <input type="number" id="m-did-pct" placeholder="e.g. 51.94" step="0.01">
+      </div>
+      <div class="manual-item">
+        <label>10Y国债收益率 (%)</label>
+        <input type="number" id="m-cn10y" placeholder="e.g. 1.728" step="0.001">
+      </div>
+      <div class="manual-item">
+        <label>PB百分位·全历史 (%)</label>
+        <input type="number" id="m-pb-pct" placeholder="e.g. 35.0" step="0.1">
+      </div>
+      <div class="manual-item">
+        <label>成分股平均ROE (%)</label>
+        <input type="number" id="m-roe" placeholder="e.g. 10.5" step="0.1">
+      </div>
+      <div class="manual-item">
+        <label>Fib 波段高点</label>
+        <input type="number" id="m-fib-high" placeholder="e.g. 1.501" step="0.001">
+      </div>
+      <div class="manual-item">
+        <label>Fib 波段低点</label>
+        <input type="number" id="m-fib-low" placeholder="e.g. 1.241" step="0.001">
+      </div>
+      <div class="manual-item">
+        <label>Andean bull 值</label>
+        <input type="number" id="m-bull" placeholder="e.g. 0.012" step="0.0001">
+      </div>
+      <div class="manual-item">
+        <label>Andean bear 值</label>
+        <input type="number" id="m-bear" placeholder="e.g. 0.022" step="0.0001">
+      </div>
+    </div>
+  </div>
+
+  <!-- 一键填入 -->
+  <button class="fill-btn" id="fill-btn" onclick="fillDashboard()" disabled>
+    📋 一键填入看板
+  </button>
+
+  <div style="height:12px"></div>
+
+  <!-- 跳转看板 -->
+  <div class="goto-bar">
+    <span>填入完成后跳转看板计算评分</span>
+    <a class="goto-btn" id="goto-link" href="#" target="_blank">打开红利看板 →</a>
+  </div>
+
+  <div class="footnote">
+    数据来源：新浪财经 · 腾讯财经<br>
+    SMA/RSI 使用前复权日线数据计算 · 仅供研究参考
+  </div>
+
+</div>
+
+<script>
+// ── 配置 ──
+const DATA_API = 'https://etf-data-api.zq609256057.workers.dev';  // 部署Worker后的地址
+const DASHBOARD_URL = 'https://zq609256057-bot.github.io/股息-ETF/etf_dividend.html'; // 看板地址
+
+let currentCode = '159307';
+let fetchedData = null;
+
+function g(id){ return document.getElementById(id); }
+
+function selectETF(code, btn) {
+  currentCode = code;
+  document.querySelectorAll('.etf-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  g('custom-code').value = '';
+  resetDisplay();
+}
+
+function resetDisplay() {
+  ['price','rsi','sma60','sma120','sma250','volratio'].forEach(k => {
+    g('d-'+k).textContent = '--';
+    g('d-'+k).className = 'data-value loading';
+    if(g('d-'+k+'-sub')) g('d-'+k+'-sub').textContent = '';
+  });
+  g('d-name').textContent = '待获取';
+  g('fill-btn').disabled = true;
+  fetchedData = null;
+  showMsg('', '');
+}
+
+g('custom-code').addEventListener('input', function(){
+  if(this.value.length === 6) {
+    currentCode = this.value;
+    document.querySelectorAll('.etf-btn').forEach(b => b.classList.remove('active'));
+  }
+});
+
+async function fetchData() {
+  const code = g('custom-code').value.trim() || currentCode;
+  if(!/^\d{6}$/.test(code)) { showMsg('请输入6位ETF代码', 'err'); return; }
+  currentCode = code;
+
+  const btn = g('btn-fetch');
+  btn.textContent = '获取中...';
+  btn.disabled = true;
+  g('status-dot').style.background = '#fbbf24';
+  showMsg('正在从新浪/腾讯财经获取数据...', 'warn');
+
+  try {
+    const resp = await fetch(`${DATA_API}?code=${code}`);
+    const data = await resp.json();
+
+    if (!data.ok) throw new Error(data.error || '获取失败');
+    fetchedData = data;
+
+    // 更新显示
+    setVal('price', data.price, '#111827', data.name);
+    setRSI(data.rsi14);
+    setSMA('sma60', data.sma60, data.price);
+    setSMA('sma120', data.sma120, data.price);
+    setSMA('sma250', data.sma250, data.price);
+    setVolRatio(data.volRatio);
+
+    const now = new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    g('fetch-time').textContent = `${data.date} 更新于 ${now} · ${data.klineCount}条K线`;
+    g('status-dot').style.background = '#6ee7b7';
+    g('fill-btn').disabled = false;
+    g('goto-link').href = DASHBOARD_URL;
+    showMsg(`✅ ${data.name}（${code}）数据获取成功`, 'ok');
+
+  } catch(e) {
+    showMsg('❌ 获取失败：' + e.message + '（请确认Worker已部署）', 'err');
+    g('status-dot').style.background = '#f87171';
+  } finally {
+    btn.textContent = '获取数据';
+    btn.disabled = false;
+  }
+}
+
+function setVal(id, val, color, sub) {
+  const el = g('d-'+id);
+  el.textContent = val ?? '--';
+  el.style.color = color || '';
+  el.className = 'data-value';
+  if(sub && g('d-'+id+'-sub')) g('d-'+id+'-sub').textContent = sub;
+}
+
+function setRSI(rsi) {
+  if(rsi == null) return;
+  const el = g('d-rsi');
+  el.textContent = rsi.toFixed(2);
+  el.className = 'data-value ' + (rsi <= 30 ? 'green' : rsi >= 70 ? 'red' : 'amber');
+  g('d-rsi-sub').textContent = rsi <= 20 ? '极度超卖★' : rsi <= 30 ? '超卖区间' : rsi <= 40 ? '偏低蓄势' : rsi <= 50 ? '中性偏低' : rsi <= 60 ? '中性偏高' : rsi <= 70 ? '偏高谨慎' : '超买回避';
+}
+
+function setSMA(id, sma, price) {
+  if(sma == null) { g('d-'+id).textContent = '数据不足'; return; }
+  const el = g('d-'+id);
+  el.textContent = sma.toFixed(4);
+  const diff = price ? ((price - sma) / sma * 100) : 0;
+  el.className = 'data-value ' + (diff >= 0 ? 'red' : 'green');
+  if(g('d-'+id+'-sub')) g('d-'+id+'-sub').textContent = (diff >= 0 ? '↑ 价格高于均线 +' : '↓ 价格低于均线 ') + Math.abs(diff).toFixed(2) + '%';
+}
+
+function setVolRatio(vr) {
+  if(vr == null) return;
+  const el = g('d-volratio');
+  el.textContent = vr.toFixed(2);
+  el.className = 'data-value ' + (vr < 0.8 ? 'green' : vr > 2 ? 'red' : 'amber');
+  g('d-volratio-sub').textContent = vr < 0.8 ? '缩量回调' : vr < 1.2 ? '平量震荡' : vr < 2 ? '放量' : '大幅放量';
+}
+
+function showMsg(text, type) {
+  const el = g('msg');
+  el.textContent = text;
+  el.className = 'msg ' + (type ? 'show ' + type : '');
+}
+
+// ── 一键填入看板 ──
+function fillDashboard() {
+  if (!fetchedData) { showMsg('请先获取数据', 'err'); return; }
+
+  // 打开看板并传递参数（通过URL hash + postMessage）
+  const params = {
+    price:    fetchedData.price,
+    sma60:    fetchedData.sma60,
+    sma120:   fetchedData.sma120,
+    sma250:   fetchedData.sma250,
+    rsi:      fetchedData.rsi14,
+    volRatio: fetchedData.volRatio,
+    // 手动字段
+    did:      g('m-did').value     || '',
+    didPct:   g('m-did-pct').value || '',
+    cn10y:    g('m-cn10y').value   || '',
+    pbPct:    g('m-pb-pct').value  || '',
+    roe:      g('m-roe').value     || '',
+    fibHigh:  g('m-fib-high').value|| '',
+    fibLow:   g('m-fib-low').value || '',
+    bull:     g('m-bull').value    || '',
+    bear:     g('m-bear').value    || '',
+    code:     currentCode,
+  };
+
+  // 把数据存到 localStorage（看板页面加载时读取）
+  localStorage.setItem('etf_autofill', JSON.stringify(params));
+
+  // 打开看板
+  const win = window.open(DASHBOARD_URL, 'etf-dashboard');
+
+  // 如果看板已开启，发送postMessage
+  setTimeout(() => {
+    if (win) win.postMessage({ type: 'ETF_AUTOFILL', data: params }, '*');
+  }, 1500);
+
+  showMsg('✅ 数据已准备，看板已打开，正在填入...', 'ok');
+}
+</script>
+</body>
+</html>
