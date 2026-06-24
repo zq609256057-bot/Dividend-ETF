@@ -132,6 +132,9 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11.5px;color:#374151">
 <input type="checkbox" id="e_sqz_just_maroon" style="width:15px;height:15px;accent-color:#7c3aed;flex-shrink:0">
 <span>🟤 Squeeze 本K线刚由鲜红变为栗色 &nbsp;<b style="color:#7c3aed">+1分</b>&nbsp;<span style="font-size:10px;color:#9ca3af">三项全选→保底8分</span></span></label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11.5px;color:#374151;margin-top:2px;padding-top:7px;border-top:.5px dashed #e9d5ff">
+<input type="checkbox" id="e_bear_shrink" style="width:15px;height:15px;accent-color:#059669;flex-shrink:0">
+<span>📉 Andean 红线(bear)数值较上一根 K线缩小（跌透企稳判定）</span></label>
 </div></div>
 <div style="grid-column:1/-1;margin-top:6px;padding:10px 12px;background:#fef2f2;border:.5px solid #fecaca;border-radius:10px">
 <div style="font-size:10px;font-weight:700;color:#dc2626;margin-bottom:8px;letter-spacing:.3px">🔻 顶部转变信号（本K线刚发生转变时勾选）</div>
@@ -327,7 +330,7 @@ function sc(s,max){return s/max>=.7?'#059669':s/max>=.4?'#d97706':'#dc2626';}
 function sd(id,desc){var el=g('desc-'+id);if(el)el.textContent=desc;}
 function clearAll(){
 ['e_price','e_did','e_cn10y','e_did_pct','e_pb_pct','e_roe','e_sma60','e_sma120','e_sma250','e_rsi','e_vol_ratio','e_fib_high','e_fib_low','e_bull','e_bear'].forEach(function(id){var el=g(id);if(el)el.value='';});
-['e_andean_just_cross','e_macd_just_green','e_sqz_just_maroon','e_andean_bear_cross','e_macd_just_weak','e_sqz_just_green'].forEach(function(id){var el=g(id);if(el)el.checked=false;});
+['e_andean_just_cross','e_macd_just_green','e_sqz_just_maroon','e_andean_bear_cross','e_macd_just_weak','e_sqz_just_green','e_bear_shrink'].forEach(function(id){var el=g(id);if(el)el.checked=false;});
 ['e_fib_zone','e_macd_color','e_macd_pos','e_macd_prev','e_andean_trend','e_sqz_color','e_sqz_dot','e_vol_state'].forEach(function(id){var el=g(id);if(el){el.value='';el.classList.remove('sel');}});
 g('e_spread').value='';g('prev-wrap').style.display='none';
 var cr=g('calcResult');if(cr)cr.classList.remove('show');}
@@ -392,17 +395,30 @@ var andBearZero=(isNaN(bear)||bear<=0);
 var sqzLime=(sqzC==='lime');
 var sqzGreen=(sqzC==='green');
 var sqzMaroon=(sqzC==='maroon');
-// ── 状态分（0~6分）──
+// ── 状态分（双向 -2~6分）──
+var bearShrink=!!(g('e_bear_shrink')&&g('e_bear_shrink').checked);
+var macdWeakC=(macdC==='orange'||macdC==='red');
+var sqzRed=(sqzC==='red');
+var bearGtBull=(!isNaN(bear)&&!isNaN(bull)&&bear>bull);
 var stateScore=0,stateDesc='';
+// 多头/底部方向（正分 0~6）
 if(macdLime&&andBullPos&&andBearZero&&sqzLime){
   stateScore=6;stateDesc='亮绿+多无空+Lime→6';}
 else if(macdLime&&andBullPos&&sqzGreen){
   stateScore=4;stateDesc='Lime+多+Green→4';}
 else if(macdBull&&andBullPos&&(sqzMaroon||sqzGreen)){
   stateScore=3;stateDesc='Green+多+Maroon/Green→3';}
+// 跌透企稳（正分 2）：弱势MACD但下跌减速+空头在收缩
+else if(macdWeakC&&sqzMaroon&&bearShrink){
+  stateScore=2;stateDesc='跌透企稳 下跌减速+空头收缩→2';}
 else if(macdBull&&!andBullPos){
   stateScore=1;stateDesc='MACD多但bull=0→1';}
-else{stateScore=0;stateDesc='偏空或中性→0';}
+// 空头/顶部方向（负分）
+else if(macdC==='red'&&bearGtBull&&sqzRed){
+  stateScore=-2;stateDesc='顶部确认/下跌加速→-2';}
+else if(macdWeakC&&bearGtBull&&sqzGreen){
+  stateScore=-1;stateDesc='刚见顶 转弱减速→-1';}
+else{stateScore=0;stateDesc='震荡中性→0';}
 // 读取顶部转变减分勾选框
 var andeanBearCross=!!(g('e_andean_bear_cross')&&g('e_andean_bear_cross').checked);
 var macdJustWeak=!!(g('e_macd_just_weak')&&g('e_macd_just_weak').checked);
@@ -575,7 +591,7 @@ var cm=title.match(/\d{6}/);var code=cm?cm[0]:'515180';
 saveRecord({date:dateVal,code:code,title:title,total:total,valTotal:valTotal,techTotal:techTotal,level:level,
 price:isNaN(price)?null:price,did:isNaN(did)?null:did,cn10y:isNaN(cn10y)?null:cn10y,spread:parseFloat(spread.toFixed(3)),
 _form:(function(){var f={};['e_price','e_did','e_cn10y','e_did_pct','e_pb_pct','e_roe','e_sma60','e_sma120','e_sma250','e_rsi','e_vol_ratio','e_fib_high','e_fib_low','e_bull','e_bear','e_fib_zone','e_macd_color','e_macd_pos','e_macd_prev','e_andean_trend','e_sqz_color','e_sqz_dot','e_vol_state'].forEach(function(id){f[id]=gv(id);});
-['e_andean_just_cross','e_macd_just_green','e_sqz_just_maroon','e_andean_bear_cross','e_macd_just_weak','e_sqz_just_green'].forEach(function(id){var el=g(id);f[id]=el?el.checked:false;});return f;})()});
+['e_andean_just_cross','e_macd_just_green','e_sqz_just_maroon','e_andean_bear_cross','e_macd_just_weak','e_sqz_just_green','e_bear_shrink'].forEach(function(id){var el=g(id);f[id]=el?el.checked:false;});return f;})()});
 showMsg('综合得分：<strong>'+total+'/100</strong>（估值'+valTotal+'+技术'+techTotal+'）');}
 function loadHistory(){return[];}// legacy stub，实际用cloudLoad
 function saveRecord(rec){
@@ -659,7 +675,7 @@ if(idx<0||idx>=records.length)return;
 var r=records[idx];if(!r._form){showMsg('⚠️ 旧版记录无法回放');return;}
 var f=r._form;Object.keys(f).forEach(function(id){var el=g(id);if(el)el.value=f[id]||'';});
 ['e_fib_zone','e_macd_color','e_macd_pos','e_macd_prev','e_andean_trend','e_sqz_color','e_sqz_dot','e_vol_state'].forEach(function(id){var el=g(id);if(el&&f[id])el.classList.add('sel');});
-['e_andean_just_cross','e_macd_just_green','e_sqz_just_maroon','e_andean_bear_cross','e_macd_just_weak','e_sqz_just_green'].forEach(function(id){var el=g(id);if(el)el.checked=!!f[id];});
+['e_andean_just_cross','e_macd_just_green','e_sqz_just_maroon','e_andean_bear_cross','e_macd_just_weak','e_sqz_just_green','e_bear_shrink'].forEach(function(id){var el=g(id);if(el)el.checked=!!f[id];});
 var hd=g('header-date');if(hd)hd.value=r.date;
 var te=g('etf-title');if(te&&r.title)te.textContent=r.title;
 updateSpread();togglePrev();calcScore();
