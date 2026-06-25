@@ -606,27 +606,20 @@ function renderHistory(records,filterCode){
 var wrap=g('history-table-wrap');
 if(!records||records.length===0){wrap.innerHTML='<p style="font-size:12px;color:var(--muted)">暂无记录，计算评分后自动保存</p>';return;}
 var rev=[].concat(records).reverse();
-// 当前代码
 var titleVal=g('etf-title')?g('etf-title').textContent:'';
 var cm2=titleVal.match(/\d{6}/);var curCode=cm2?cm2[0]:(rev[0]?rev[0].code||'':'');
-// 检索模式：filterCode有值时展示该代码全部记录（可滚动）
 var searchCode=(filterCode||'').trim();
 var isSearch=searchCode.length===6;
-// 按代码分组
+// 按代码分组（每组保留全部记录）
 var groups={};
 rev.forEach(function(r,i){
   var c=r.code||'';
   if(!groups[c])groups[c]=[];
   groups[c].push({r:r,oi:records.length-1-i});
 });
-// 决定展示哪组
 var showCode=isSearch?searchCode:(curCode&&groups[curCode]?curCode:(rev[0]?rev[0].code||'':''));
 var allForCode=groups[showCode]||[];
-// 卡片只展示前3条，滚动区展示全部
-var visible=allForCode.slice(0,3);
-var totalHidden=records.length-visible.length;
-var otherCodes=Object.keys(groups).filter(function(c){return c!==showCode;});
-// 表头（红利无US10Y列）
+// 表头（红利：紫色主题，无US10Y列）
 var thead='<thead><tr style="border-bottom:1.5px solid #e5e7eb">'
   +'<th style="padding:0 6px 5px;font-size:10px;color:var(--purple);text-align:left">日期↩回放</th>'
   +'<th style="padding:0 6px 5px;font-size:10px;color:var(--purple);text-align:left">代码</th>'
@@ -637,11 +630,11 @@ var thead='<thead><tr style="border-bottom:1.5px solid #e5e7eb">'
   +'<th style="padding:0 6px 5px;font-size:10px;color:var(--muted);text-align:left">价格</th>'
   +'<th style="padding:0 6px 5px;font-size:10px;color:var(--muted)">删除</th>'
   +'</tr></thead>';
-// 行生成函数（红利版，无US10Y）
+// 行生成（红利版：无US10Y）
 function makeRow(item){
   var r=item.r,oi=item.oi;
   return '<tr>'
-  +'<td style="padding:5px 6px;font-size:11px;white-space:nowrap"><span onclick="loadRecord('+oi+')" style="color:var(--purple);font-weight:600;border-bottom:1px dashed;cursor:pointer" title="点击回放">'+r.date+'</span></td>'
+  +'<td style="padding:5px 6px;font-size:11px;white-space:nowrap"><span onclick="loadRecord('+oi+')" style="color:var(--purple);font-weight:600;border-bottom:1px dashed;cursor:pointer">'+r.date+'</span></td>'
   +'<td style="padding:5px 6px;font-size:11px;font-weight:600;color:var(--purple)">'+(r.code||'')+'</td>'
   +'<td style="padding:5px 6px;font-size:13px;font-weight:700;color:'+sc(r.total,100)+'">'+r.total+'</td>'
   +'<td style="padding:5px 6px;font-size:11px">'+r.valTotal+'/60</td>'
@@ -651,41 +644,49 @@ function makeRow(item){
   +'<td style="padding:5px 6px;text-align:center"><button onclick="deleteRecord('+oi+')" style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:13px">🗑</button></td>'
   +'</tr>';
 }
-// 卡片区：固定3条
-var cardRows='';
-visible.forEach(function(item){cardRows+=makeRow(item);});
-// 检索/滚动区：该代码全部记录（超3条时显示）
-var scrollSection='';
-if(isSearch&&allForCode.length>0){
+
+if(isSearch){
+  // ── 检索模式：隐藏固定3条，只显示检索结果滚动区 ──
+  if(allForCode.length===0){
+    wrap.innerHTML='<p style="font-size:12px;color:var(--muted);margin-top:4px">未找到代码 <b>'+searchCode+'</b> 的记录</p>';
+    return;
+  }
   var allRows='';
   allForCode.forEach(function(item){allRows+=makeRow(item);});
-  scrollSection='<div style="margin-top:10px;border-top:1.5px solid #e5e7eb;padding-top:8px">'
-    +'<div style="font-size:11px;font-weight:700;color:var(--purple);margin-bottom:6px">🔍 '+showCode+' 全部 '+allForCode.length+' 条记录</div>'
-    +'<div style="max-height:240px;overflow-y:auto;border-radius:8px;border:.5px solid #e5e7eb">'
+  wrap.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--purple);margin-bottom:6px">🔍 '+searchCode+' 共 '+allForCode.length+' 条记录</div>'
+    +'<div style="height:260px;overflow-y:scroll;border-radius:8px;border:.5px solid #e5e7eb;-webkit-overflow-scrolling:touch">'
     +'<table style="width:100%;border-collapse:collapse;min-width:420px">'+thead+'<tbody>'+allRows+'</tbody></table>'
-    +'</div></div>';
-} else if(!isSearch&&allForCode.length>3){
-  var allRows='';
-  allForCode.forEach(function(item){allRows+=makeRow(item);});
-  scrollSection='<div style="margin-top:10px;border-top:1.5px solid #e5e7eb;padding-top:8px">'
-    +'<div style="font-size:11px;font-weight:700;color:var(--purple);margin-bottom:6px">📋 '+showCode+' 全部 '+allForCode.length+' 条记录（可滚动）</div>'
-    +'<div style="max-height:240px;overflow-y:auto;border-radius:8px;border:.5px solid #e5e7eb">'
-    +'<table style="width:100%;border-collapse:collapse;min-width:420px">'+thead+'<tbody>'+allRows+'</tbody></table>'
-    +'</div></div>';
+    +'</div>'
+    +'<p style="font-size:10px;color:var(--muted);margin-top:6px">点击日期回放 · 点击✕清空搜索返回默认视图</p>';
+} else {
+  // ── 默认模式：上方固定显示最新3条，超3条时下方展开滚动区 ──
+  var visible=allForCode.slice(0,3);
+  var otherCodes=Object.keys(groups).filter(function(c){return c!==showCode;});
+  var totalHidden=records.length-visible.length;
+  var cardRows='';
+  visible.forEach(function(item){cardRows+=makeRow(item);});
+  var scrollSection='';
+  if(allForCode.length>3){
+    var allRows='';
+    allForCode.forEach(function(item){allRows+=makeRow(item);});
+    scrollSection='<div style="margin-top:10px;border-top:1.5px solid #e5e7eb;padding-top:8px">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--purple);margin-bottom:6px">📋 '+showCode+' 全部 '+allForCode.length+' 条（可滚动查看）</div>'
+      +'<div style="height:200px;overflow-y:scroll;border-radius:8px;border:.5px solid #e5e7eb;-webkit-overflow-scrolling:touch">'
+      +'<table style="width:100%;border-collapse:collapse;min-width:420px">'+thead+'<tbody>'+allRows+'</tbody></table>'
+      +'</div></div>';
+  }
+  var hiddenTip='';
+  if(totalHidden>0){
+    var otherStr=otherCodes.length>0?'，另有 '+otherCodes.join('、')+' 等其他ETF记录':'';
+    hiddenTip='<div style="margin-top:8px;padding:7px 10px;background:#f3f4f6;border-radius:8px;display:flex;justify-content:space-between;align-items:center">'
+      +'<span style="font-size:11px;color:var(--muted)">另有 <b style="color:#374151">'+totalHidden+'</b> 条记录已存入云端'+otherStr+'</span>'
+      +'<span style="font-size:10px;color:#9ca3af">导出CSV查看全部</span></div>';
+  }
+  wrap.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:420px">'+thead+'<tbody>'+cardRows+'</tbody></table></div>'
+    +scrollSection+hiddenTip
+    +'<p style="font-size:10px;color:var(--muted);margin-top:6px">共'+records.length+'条 · 当前展示'+showCode+'最新'+visible.length+'条 · 点击日期回放</p>';
 }
-// 隐藏提示
-var hiddenTip='';
-if(!isSearch&&totalHidden>0){
-  var otherStr=otherCodes.length>0?'，另有 '+otherCodes.join('、')+' 等其他ETF记录':'';
-  hiddenTip='<div style="margin-top:8px;padding:7px 10px;background:#f3f4f6;border-radius:8px;display:flex;justify-content:space-between;align-items:center">'
-    +'<span style="font-size:11px;color:var(--muted)">另有 <b style="color:#374151">'+totalHidden+'</b> 条记录已存入云端'+otherStr+'</span>'
-    +'<span style="font-size:10px;color:#9ca3af">导出CSV查看全部</span></div>';
 }
-var notFoundTip=isSearch&&allForCode.length===0?'<p style="font-size:12px;color:var(--muted);margin-top:8px">未找到代码 '+showCode+' 的记录</p>':'';
-wrap.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:420px">'+thead+'<tbody>'+cardRows+'</tbody></table></div>'
-+scrollSection+hiddenTip+notFoundTip
-+'<p style="font-size:10px;color:var(--muted);margin-top:6px">共'+records.length+'条 · 卡片展示'+showCode+'最新'+visible.length+'条 · 点击日期回放</p>';}
-// 检索函数（红利）
 function searchHistory(code){
 var trimmed=(code||'').trim();
 if(trimmed.length===6){renderHistory(window._etfHistory||[],trimmed);}
