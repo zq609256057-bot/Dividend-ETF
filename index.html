@@ -107,7 +107,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 <div class="entry-field"><label>SMA250</label><input type="number" id="e_sma250" placeholder="e.g. 1.393" step="0.001"></div>
 <div class="entry-field"><label>RSI 14日</label><input type="number" id="e_rsi" placeholder="e.g. 38.5" step="0.1"></div>
 <div class="entry-field"><label>量比（今日/5日均量）</label><input type="number" id="e_vol_ratio" placeholder="e.g. 0.8" step="0.01"></div>
-<div class="entry-field"><label>成交量状态</label><select id="e_vol_state" onchange="this.classList.add('sel')"><option value="">请选择</option><option value="shrink">缩量回调≤0.8</option><option value="flat">平量震荡0.9~1.1</option><option value="mild_up">温和放量上涨</option><option value="big_up">大幅放量上涨</option><option value="mild_down">温和放量下跌</option><option value="big_down">大幅放量下跌</option></select></div>
+<div class="entry-field"><label>成交量状态</label><select id="e_vol_state" onchange="this.classList.add('sel')"><option value="">请选择</option><option value="down_shrink">下跌+缩量≤0.7（健康洗盘★）</option><option value="down_mild">下跌+温和缩量0.7~1.0</option><option value="down_vol">下跌+放量1.0~1.5（警惕）</option><option value="down_big">下跌+巨量&gt;1.5（恐慌抛盘）</option><option value="flat">横盘平量0.8~1.1</option><option value="up_shrink">上涨+缩量≤0.8（惜售）</option><option value="up_mild">上涨+温和放量0.8~1.5（健康★）</option><option value="up_big">上涨+巨量&gt;1.5（情绪过热）</option></select></div>
 <div class="entry-field"><label>Fib 波段高点</label><input type="number" id="e_fib_high" placeholder="e.g. 1.501" step="0.001"></div>
 <div class="entry-field"><label>Fib 波段低点</label><input type="number" id="e_fib_low" placeholder="e.g. 1.241" step="0.001"></div>
 <div class="entry-field"><label>Fib方向</label><select id="e_fib_dir" onchange="this.classList.add('sel')"><option value="">请选择</option><option value="down">下行寻找支撑（越深越好）</option><option value="up">上行寻找阻力（越浅越好）</option></select></div>
@@ -249,7 +249,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 
 <!-- 评分信号参考 -->
 <div class="card">
-<div class="card-title">⑨ 评分信号参考</div>
+<div class="card-title">⑧ 评分信号参考</div>
 <table style="width:100%;border-collapse:collapse;font-size:12px">
 <thead><tr style="border-bottom:1.5px solid #e5e7eb">
 <th style="padding:6px 8px;text-align:left;font-size:10px;color:var(--muted)">分数区间</th>
@@ -268,7 +268,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 
 <!-- History -->
 <div class="card" id="history-section">
-<div class="card-title">⑧ 历史评分记录</div>
+<div class="card-title">⑨ 历史评分记录</div>
 <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
 <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;grid-column:1/-1"><input id="hist-search" type="text" inputmode="numeric" maxlength="6" placeholder="输入代码检索历史..." style="flex:1;padding:7px 10px;border-radius:8px;border:.5px solid #e5e7eb;font-size:12px;background:#f8f5ff;color:#374151;outline:none;font-family:monospace" oninput="searchHistory(this.value)"><button onclick="searchHistory(document.getElementById('hist-search').value)" style="padding:7px 12px;border-radius:8px;background:#7c3aed;color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🔍 检索</button><button onclick="document.getElementById('hist-search').value='';renderHistory(window._etfHistory||[])" style="padding:7px 10px;border-radius:8px;background:#f3f4f6;color:var(--muted);border:.5px solid #e5e7eb;font-size:12px;cursor:pointer">✕</button></div><button class="hist-btn" onclick="exportCSV()" style="background:#7c3aed;color:#fff">📥 导出CSV</button>
 <button class="hist-btn" onclick="showMonthly()" style="background:#059669;color:#fff">📊 月度汇总</button>
@@ -456,12 +456,17 @@ sb('andean',andS,3);sp('andean',andS,3);sd('andean',andDesc);techTotal+=andS;
 sb('sqz',sqzS,3);sp('sqz',sqzS,3);sd('sqz',sqzDesc);techTotal+=sqzS;
 var rsiS=isNaN(rsi)?0:(rsi<=20?10:rsi<=25?9:rsi<=30?8:rsi<=35?7:rsi<=40?6:rsi<=45?5:rsi<=50?4:rsi<=55?3:rsi<=60?2:0);
 sb('rsi',rsiS,10);sp('rsi',rsiS,10);sd('rsi',isNaN(rsi)?'未填入':rsi<=30?'超卖 底部区':rsi<=40?'偏低 关注':rsi<=50?'中性偏低':'高位');techTotal+=rsiS;
-var volS=1;
-if(volState==='shrink'){volS=5;}else if(volState==='flat'){volS=2;}
-else if(volState==='mild_up'){volS=3;}else if(volState==='big_up'){volS=2;}
-else if(volState==='mild_down'){volS=3;}else if(volState==='big_down'){volS=0;}
-else if(!isNaN(volRatio)){volS=volRatio<=0.8?5:volRatio<=1.1?2:volRatio<=1.5?3:0;}
-sb('vol',volS,5);sp('vol',volS,5);sd('vol',volState==='shrink'?'缩量回调 看好':volState==='flat'?'平量震荡':volState==='mild_up'?'温和放量上涨':volState==='big_up'?'大幅放量':volState==='mild_down'?'温和缩量下跌':'大幅放量下跌');techTotal+=volS;
+var volS=2;
+if(volState==='down_shrink'){volS=5;}
+else if(volState==='down_mild'){volS=4;}
+else if(volState==='down_vol'){volS=2;}
+else if(volState==='down_big'){volS=0;}
+else if(volState==='flat'){volS=2;}
+else if(volState==='up_shrink'){volS=4;}
+else if(volState==='up_mild'){volS=5;}
+else if(volState==='up_big'){volS=2;}
+else if(!isNaN(volRatio)){volS=volRatio<=0.7?4:volRatio<=1.0?3:volRatio<=1.5?2:0;}
+sb('vol',volS,5);sp('vol',volS,5);sd('vol',volState==='down_shrink'?'缩量阴跌 健康洗盘★':volState==='down_mild'?'温和缩量下跌':volState==='down_vol'?'放量下跌 警惕':volState==='down_big'?'巨量抛盘 风险':volState==='flat'?'横盘平量':volState==='up_shrink'?'缩量上涨 惜售':volState==='up_mild'?'温和放量上涨 健康★':volState==='up_big'?'巨量上涨 过热':'未填入');techTotal+=volS;
 g('subtotal-tech').textContent=techTotal+' / 40';g('subtotal-tech').style.color=sc(techTotal,40);
 total=valTotal+techTotal;
 // ====== 趋势动量加分（路线B）======
@@ -495,6 +500,29 @@ if(_sameCode.length>=1){
     var _dSpread=spread-_pSpread;
     if(_dSpread>=0.1){trendBonus+=1;trendItems.push('利差↑+'+_dSpread.toFixed(2)+'% +1');}
     else if(_dSpread<=-0.1){trendBonus-=1;trendItems.push('利差↓'+_dSpread.toFixed(2)+'% -1');}
+  }
+  // PB百分位趋势（下降=变便宜=加分）
+  var _pPb=_pv('e_pb_pct'),_cPb=parseFloat(gv('e_pb_pct'));
+  if(!isNaN(_pPb)&&!isNaN(_cPb)){
+    var _dPb=_cPb-_pPb;
+    if(_dPb<=-3){trendBonus+=1;trendItems.push('PB分位↓'+_pPb.toFixed(0)+'→'+_cPb.toFixed(0)+' +1');}
+    else if(_dPb>=3){trendBonus-=1;trendItems.push('PB分位↑'+_pPb.toFixed(0)+'→'+_cPb.toFixed(0)+' -1');}
+  }
+  // 10年国债收益率趋势（下行=红利更香=加分）
+  var _pCn10y=_pv('e_cn10y');
+  if(!isNaN(_pCn10y)&&!isNaN(cn10y)){
+    var _dCn=cn10y-_pCn10y;
+    if(_dCn<=-0.05){trendBonus+=1;trendItems.push('国债↓'+_pCn10y.toFixed(2)+'→'+cn10y.toFixed(2)+' +1');}
+    else if(_dCn>=0.05){trendBonus-=1;trendItems.push('国债↑'+_pCn10y.toFixed(2)+'→'+cn10y.toFixed(2)+' -1');}
+  }
+  // 价格与SMA250偏离度趋势（更深跌破=底部特征=加分）
+  var _pPrice=_pv('e_price'),_pSma250=_pv('e_sma250');
+  if(!isNaN(_pPrice)&&!isNaN(_pSma250)&&_pSma250>0&&!isNaN(price)&&!isNaN(sma250)&&sma250>0){
+    var _pDev=(_pPrice-_pSma250)/_pSma250*100;
+    var _cDev=(price-sma250)/sma250*100;
+    var _dDev=_cDev-_pDev;
+    if(_dDev<=-1){trendBonus+=1;trendItems.push('SMA250偏离↓'+_cDev.toFixed(1)+'% +1');}
+    else if(_dDev>=1){trendBonus-=1;trendItems.push('SMA250偏离↑'+_cDev.toFixed(1)+'% -1');}
   }
   trendBonus=Math.max(-2,Math.min(3,trendBonus));
 }
