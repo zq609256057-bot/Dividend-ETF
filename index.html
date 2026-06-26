@@ -694,15 +694,7 @@ if(isSearch){
   var cardRows='';
   visible.forEach(function(item){cardRows+=makeRow(item);});
   var scrollSection='';
-  if(allForCode.length>3){
-    var allRows='';
-    allForCode.forEach(function(item){allRows+=makeRow(item);});
-    scrollSection='<div style="margin-top:10px;border-top:1.5px solid #e5e7eb;padding-top:8px">'
-      +'<div style="font-size:11px;font-weight:700;color:var(--purple);margin-bottom:6px">📋 '+showCode+' 全部 '+allForCode.length+' 条（可滚动查看）</div>'
-      +'<div style="height:200px;overflow-y:scroll;border-radius:8px;border:.5px solid #e5e7eb;-webkit-overflow-scrolling:touch">'
-      +'<table style="width:100%;border-collapse:collapse;min-width:420px">'+thead+'<tbody>'+allRows+'</tbody></table>'
-      +'</div></div>';
-  }
+  // 默认模式不显示滚动区，只在主动检索时才展开
   var hiddenTip='';
   if(totalHidden>0){
     var otherStr=otherCodes.length>0?'，另有 '+otherCodes.join('、')+' 等其他ETF记录':'';
