@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>红利ETF看板</title>
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;max-width:100%}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+img,video,svg,canvas{max-width:100%}
 :root{--bg:#f3f4f6;--card:#fff;--bd:rgba(0,0,0,.07);--red:#dc2626;--green:#059669;--blue:#2563eb;--amber:#d97706;--purple:#7c3aed;--muted:#6b7280;--shadow:0 1px 4px rgba(0,0,0,.06),0 0 0 .5px rgba(0,0,0,.04)}
 body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#111827;min-height:100vh;padding:16px;overflow-x:hidden}
-.card{background:var(--card);border-radius:12px;box-shadow:var(--shadow);border:.5px solid var(--bd);padding:16px;margin-bottom:12px;overflow:hidden}
+.card{background:var(--card);border-radius:12px;box-shadow:var(--shadow);border:.5px solid var(--bd);padding:16px;margin-bottom:12px;overflow:hidden;width:100%;box-sizing:border-box}
 .card-title{font-size:13px;font-weight:700;margin-bottom:12px;padding-left:10px;border-left:3px solid var(--purple);white-space:nowrap}
 .score-hero{background:var(--card);border-radius:16px;box-shadow:var(--shadow);border:.5px solid var(--bd);padding:24px 20px;margin-bottom:16px;text-align:center}
 .score-big{font-family:monospace;font-size:72px;font-weight:700;line-height:1}
@@ -62,16 +63,16 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 .analyst-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
 .analyst-dot.green{background:#059669}.analyst-dot.red{background:#dc2626}.analyst-dot.gray{background:var(--muted)}
 .analyst-item p{font-size:11px;color:#111827;line-height:1.5}
-.entry-field{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
-.entry-field label{font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
-.entry-field input,.entry-field select{font-family:monospace;font-size:13px;padding:7px 10px;border:1px solid #e5e7eb;border-radius:8px;background:#f9fafb;color:#111827;outline:none;width:100%}
+.entry-field{display:flex;flex-direction:column;gap:4px;margin-bottom:8px;min-width:0}
+.entry-field label{font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.entry-field input,.entry-field select{font-family:monospace;font-size:13px;padding:7px 10px;border:1px solid #e5e7eb;border-radius:8px;background:#f9fafb;color:#111827;outline:none;width:100%;min-width:0;box-sizing:border-box}
 .entry-field input:focus,.entry-field select:focus{border-color:var(--purple);box-shadow:0 0 0 2px rgba(124,58,237,.1);background:#fff}
 .entry-field select{color:var(--muted)}.entry-field select.sel{color:#111827}
-.entry-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.btn-row{display:flex;gap:8px;margin-top:12px}
-.btn-calc{flex:2;padding:10px;background:#059669;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}
-.btn-fill{flex:2;padding:10px;background:var(--purple);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}
-.btn-clear{flex:1;padding:10px;background:#f3f4f6;color:var(--muted);border:1px solid #e5e7eb;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer}
+.entry-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%}
+.btn-row{display:flex;flex-direction:row;flex-wrap:nowrap;gap:8px;margin-top:12px;width:100%}
+.btn-calc{flex:2;min-width:0;padding:10px;background:#059669;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-fill{flex:2;min-width:0;padding:10px;background:var(--purple);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-clear{flex:1;min-width:0;padding:10px;background:#f3f4f6;color:var(--muted);border:1px solid #e5e7eb;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
 .calc-result{display:none;margin-top:10px;padding:10px 12px;background:#f0fdf4;border:.5px solid #bbf7d0;border-radius:10px;font-size:11px;color:#065f46}
 .calc-result.show{display:block}
 .spread-box{background:#f9fafb;border-radius:8px;padding:8px;border:.5px solid var(--bd);text-align:center}
@@ -99,10 +100,10 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 <button onclick="selectIndex('930955','159307')" id="btn-930955" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e9d5ff;background:#fff;color:#7c3aed">红利低波100 930955</button>
 <button onclick="selectIndex('000015','510880')" id="btn-000015" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e9d5ff;background:#fff;color:#7c3aed">上证红利 000015</button>
 </div>
-<div style="display:flex;gap:6px;align-items:center">
-<input id="custom-index-input" type="text" maxlength="8" placeholder="自定义指数代码 如 H30269" style="flex:1;padding:7px 10px;border-radius:8px;border:1px solid #e9d5ff;font-size:12px;font-family:monospace;background:#fff;outline:none">
-<input id="custom-etf-input" type="text" maxlength="6" placeholder="ETF代码（可选）" style="flex:1;padding:7px 10px;border-radius:8px;border:1px solid #e9d5ff;font-size:12px;font-family:monospace;background:#fff;outline:none">
-<button onclick="selectCustomIndex()" style="padding:7px 14px;border-radius:8px;background:#7c3aed;color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">确认</button>
+<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;width:100%">
+<input id="custom-index-input" type="text" maxlength="8" placeholder="自定义指数代码 如 H30269" style="flex:1 1 120px;min-width:0;padding:7px 10px;border-radius:8px;border:1px solid #e9d5ff;font-size:12px;font-family:monospace;background:#fff;outline:none;box-sizing:border-box">
+<input id="custom-etf-input" type="text" maxlength="6" placeholder="ETF代码（可选）" style="flex:1 1 100px;min-width:0;padding:7px 10px;border-radius:8px;border:1px solid #e9d5ff;font-size:12px;font-family:monospace;background:#fff;outline:none;box-sizing:border-box">
+<button onclick="selectCustomIndex()" style="flex-shrink:0;padding:7px 14px;border-radius:8px;background:#7c3aed;color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">确认</button>
 </div>
 <div id="selected-index-label" style="font-size:10px;color:#9ca3af;margin-top:6px">当前：未选择（将使用000922）</div>
 </div>
