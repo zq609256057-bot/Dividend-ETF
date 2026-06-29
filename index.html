@@ -93,17 +93,17 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 <div class="card-title">📊 录入指标数据</div>
 
 <!-- 指数选择器 -->
-<div style="margin-bottom:14px;padding:12px;background:#f8f5ff;border:.5px solid #e9d5ff;border-radius:10px">
+<div style="margin-bottom:14px;padding:12px;background:#f8f5ff;border:.5px solid #e9d5ff;border-radius:10px;width:100%;box-sizing:border-box">
 <div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:8px">🔭 选择指数 / ETF</div>
-<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-<button onclick="selectIndex('000922','')" id="btn-000922" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e9d5ff;background:#fff;color:#7c3aed">中证红利 000922</button>
-<button onclick="selectIndex('930955','159307')" id="btn-930955" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e9d5ff;background:#fff;color:#7c3aed">红利低波100 930955</button>
-<button onclick="selectIndex('000015','510880')" id="btn-000015" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e9d5ff;background:#fff;color:#7c3aed">上证红利 000015</button>
+<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;width:100%">
+<button onclick="selectIndex('000922','')" id="btn-000922" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e9d5ff;background:#fff;color:#7c3aed;white-space:nowrap">中证红利 000922</button>
+<button onclick="selectIndex('930955','159307')" id="btn-930955" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e9d5ff;background:#fff;color:#7c3aed;white-space:nowrap">红利低波100 930955</button>
+<button onclick="selectIndex('000015','510880')" id="btn-000015" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e9d5ff;background:#fff;color:#7c3aed;white-space:nowrap">上证红利 000015</button>
 </div>
-<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;width:100%">
-<input id="custom-index-input" type="text" maxlength="8" placeholder="自定义指数代码 如 H30269" style="flex:1 1 120px;min-width:0;padding:7px 10px;border-radius:8px;border:1px solid #e9d5ff;font-size:12px;font-family:monospace;background:#fff;outline:none;box-sizing:border-box">
-<input id="custom-etf-input" type="text" maxlength="6" placeholder="ETF代码（可选）" style="flex:1 1 100px;min-width:0;padding:7px 10px;border-radius:8px;border:1px solid #e9d5ff;font-size:12px;font-family:monospace;background:#fff;outline:none;box-sizing:border-box">
-<button onclick="selectCustomIndex()" style="flex-shrink:0;padding:7px 14px;border-radius:8px;background:#7c3aed;color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">确认</button>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%">
+<input id="custom-index-input" type="text" maxlength="8" placeholder="自定义指数代码" style="min-width:0;width:100%;padding:7px 10px;border-radius:8px;border:1px solid #e9d5ff;font-size:12px;font-family:monospace;background:#fff;outline:none;box-sizing:border-box">
+<input id="custom-etf-input" type="text" maxlength="6" placeholder="ETF代码（可选）" style="min-width:0;width:100%;padding:7px 10px;border-radius:8px;border:1px solid #e9d5ff;font-size:12px;font-family:monospace;background:#fff;outline:none;box-sizing:border-box">
+<button onclick="selectCustomIndex()" style="grid-column:1/-1;padding:8px 14px;border-radius:8px;background:#7c3aed;color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">确认自定义代码</button>
 </div>
 <div id="selected-index-label" style="font-size:10px;color:#9ca3af;margin-top:6px">当前：未选择（将使用000922）</div>
 </div>
