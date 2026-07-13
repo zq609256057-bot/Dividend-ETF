@@ -112,6 +112,10 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 <div class="entry-field"><label>隐含ROE估算（PB / PE-TTM，%）</label><input type="number" id="e_roe" placeholder="自动读取估算值" step="0.1"></div>
 <div class="entry-field" style="grid-column:span 2"><label>股债利差（%）— 自动计算</label><input type="number" id="e_spread" placeholder="自动 = DID - CN10Y" readonly style="background:#f3f4f6;color:var(--muted)"></div>
 </div>
+<div id="macro-panel" style="margin-top:10px;padding:10px 12px;background:#f0fdf4;border:.5px solid #bbf7d0;border-radius:10px;font-size:11px;line-height:1.65;color:#166534">
+<div style="font-weight:700;margin-bottom:4px">🌐 宏观面 · 自动数据</div>
+<div id="macro-status">宏观数据暂不可用</div>
+</div>
 <div style="font-size:11px;font-weight:700;color:var(--muted);margin:12px 0 8px;text-transform:uppercase">📉 技术面</div>
 <div class="entry-grid">
 <div class="entry-field"><label>SMA60</label><input type="number" id="e_sma60" placeholder="e.g. 1.420" step="0.001"></div>
@@ -462,7 +466,7 @@ function mapSnapshotIndexToFormData(snapshot, code){
   }
   var item = snapshot.indices.find(function(candidate){ return candidate.code === code; });
   if(!item || !item.kline || !item.valuation) throw new Error('快照缺少指数 '+code);
-  var v=item.valuation,k=item.kline,t=item.technical||null;
+  var v=item.valuation,k=item.kline,t=item.technical||null,m=item.macro||null;
   return {
     _mode:'latest_snapshot',_fetchedDate:snapshot.as_of_date,index:item.code,name:item.name,
     instrument_type:'index',price_unit:'index_points',price:k.close,price_date:k.date,
@@ -471,6 +475,10 @@ function mapSnapshotIndexToFormData(snapshot, code){
     pe_ttm:v.pe_ttm,pe_ttm_pct:v.peTtmPercentileFullHistory,
     roe:v.roe,roe_implied_ttm:v.roeImpliedTtm,roe_display:v.roeImpliedTtm*100,
     estimated:v.estimated,source:v.source,update_time:item.update_time,fallback_used:item.fallback_used,
+    cn10y:m&&m.cn10yYield,yield_spread:m&&m.yieldSpread,yield_spread_percentile:m&&m.yieldSpreadPercentile,
+    macro_window:m&&m.window,macro_sample_count:m&&m.sampleCount,macro_valuation_date:m&&m.valuationDate,
+    macro_date:m&&m.macroDate,macro_source:m&&m.source,macro_quality:m&&m.quality,
+    macro_estimated:m&&m.estimated,macro_available:!!m,
     sma60:t&&t.sma60,sma120:t&&t.sma120,sma250:t&&t.sma250,rsi:t&&t.rsi14,
     vol_ratio:t&&t.volumeRatio5d,volume_status:t&&t.volumeStatus,
     price_position_252:t&&t.pricePosition252,price_252_low:t&&t.price252Low,
@@ -495,6 +503,12 @@ function applyDivData(d){
   // 估值面
   if(setV('e_did', d.did))   filled.push('DID='+formatDisplayNumber(d.did)+'%'); else missing.push('DID');
   if(setV('e_cn10y', d.cn10y)) filled.push('CN10Y='+formatDisplayNumber(d.cn10y)+'%'); else missing.push('CN10Y');
+  var macroStatus=g('macro-status');
+  if(macroStatus){
+    macroStatus.innerHTML=d.macro_available
+      ? 'CN10Y <b>'+formatDisplayNumber(d.cn10y)+'%</b> · 股债利差 <b>'+formatDisplayNumber(d.yield_spread)+'%</b> · 10Y历史百分位 <b>'+formatDisplayNumber(d.yield_spread_percentile)+'%</b><br>估值日期 '+d.macro_valuation_date+' · 宏观日期 '+d.macro_date+' · 样本 '+d.macro_sample_count+' · 来源 lixinger · quality='+d.macro_quality+' · estimated='+(d.macro_estimated===true?'true':'false')
+      : '宏观数据暂不可用';
+  }
 
   if(setV('e_did_pct', d.did_pct)) filled.push('DID分位='+formatDisplayNumber(d.did_pct)+'%');
   else missing.push('DID百分位');
@@ -551,6 +565,7 @@ function applyDivData(d){
   msg += '<div style="margin-top:6px;padding:6px 9px;background:#f8fafc;border-radius:7px;border:.5px solid #e2e8f0;font-size:10px;color:#6b7280">';
   msg += '<b>📆 数据日期</b>：指数点位 @ '+(d.price_date||srcDate)+' · DID @ '+(d.did_date||srcDate);
   msg += '<br><b>来源</b>：'+(d.source||'未提供')+' · 更新 '+(d.update_time||'未提供')+' · estimated='+(d.estimated===true?'true':'false');
+  msg += '<br><b>宏观面</b>：'+(d.macro_available?('自动数据 · CN10Y '+formatDisplayNumber(d.cn10y)+'% · 利差 '+formatDisplayNumber(d.yield_spread)+'% · 10Y百分位 '+formatDisplayNumber(d.yield_spread_percentile)+'% · valuation '+d.macro_valuation_date+' / macro '+d.macro_date):'宏观数据暂不可用');
   msg += '<br><b>技术指标</b>：'+(d.technical_source||'无technical，保留手动fallback')+' · 日期 '+(d.technical_date||'未提供')+' · quality='+(d.technical_quality||'未提供')+' · estimated='+(d.price_position_252_estimated===true?'true':'false')+' · fallback='+(d.technical_fallback_used===true?'true':'false');
   if(uniq.length > 1) msg += '<br><span style="color:#d97706;font-weight:600">⚠️ 中A市场休市日不同，部分数据日期存在差异</span>';
   msg += '</div>';
@@ -573,7 +588,7 @@ function showDivManualReminder(){
     var cr = g('calcResult'); if(cr) cr.after(remind);
   }
   remind.innerHTML = '<strong>📝 剩余需手动填写的项目：</strong><br>'
-    + '① 10Y国债收益率（本轮未接入）<br>'
+    + '① 10Y国债收益率（macro缺失时手动填写）<br>'
     + '② 成交量状态（自动失败时保留手动）<br>'
     + '③ Andean bull/bear 值 + 趋势 → TradingView<br>'
     + '④ MACD 颜色 + 零轴 → TradingView<br>'
