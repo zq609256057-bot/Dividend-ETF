@@ -119,7 +119,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 <div class="entry-field"><label>SMA250</label><input type="number" id="e_sma250" placeholder="e.g. 1.393" step="0.001"></div>
 <div class="entry-field"><label>RSI 14日</label><input type="number" id="e_rsi" placeholder="e.g. 38.5" step="0.1"></div>
 <div class="entry-field"><label>量比（今日/5日均量）</label><input type="number" id="e_vol_ratio" placeholder="e.g. 0.8" step="0.01"></div>
-<div class="entry-field"><label>成交量状态</label><select id="e_vol_state" onchange="this.classList.add('sel')"><option value="">请选择</option><option value="down_shrink">下跌+缩量≤0.7（健康洗盘★）</option><option value="down_mild">下跌+温和缩量0.7~1.0</option><option value="down_vol">下跌+放量1.0~1.5（警惕）</option><option value="down_big">下跌+巨量&gt;1.5（恐慌抛盘）</option><option value="flat">横盘平量0.8~1.1</option><option value="up_shrink">上涨+缩量≤0.8（惜售）</option><option value="up_mild">上涨+温和放量0.8~1.5（健康★）</option><option value="up_big">上涨+巨量&gt;1.5（情绪过热）</option></select></div>
+<div class="entry-field"><label>成交量状态</label><select id="e_vol_state" onchange="this.classList.add('sel')"><option value="">请选择</option></select></div>
+<script type="application/json" id="volume-status-config">{"automationEnabled":true,"ruleSource":"config/scoring_rules.json#volumeStatus","priceChangeThreshold":{"downExclusive":-0.01,"upExclusive":0.01},"volumeRatioThreshold":{"shrinkExclusive":0.8,"normalExclusive":1.2,"bigExclusive":1.5},"manualOptions":[{"value":"down_shrink","display":"下跌+缩量<0.8（健康洗盘★）","score":5},{"value":"down_mild","display":"下跌+温和量0.8~<1.2","score":4},{"value":"down_vol","display":"下跌+放量1.2~<1.5（警惕）","score":2},{"value":"down_big","display":"下跌+巨量≥1.5（恐慌抛盘）","score":0},{"value":"flat","display":"横盘（-1%~+1%，量比不限）","score":2},{"value":"up_shrink","display":"上涨+缩量<0.8（惜售）","score":4},{"value":"up_mild","display":"上涨+温和量0.8~<1.2（健康★）","score":5},{"value":"up_big","display":"上涨+放量≥1.2（情绪过热）","score":2}]}</script>
 <div class="entry-field"><label>252日价格位置百分位（自动）</label><input type="number" id="e_price_position_252" placeholder="自动填充或留空" step="0.1"></div>
 <div class="entry-field"><label>252日最低价</label><input type="number" id="e_price_252_low" placeholder="自动填充" step="0.001"></div>
 <div class="entry-field"><label>252日最高价</label><input type="number" id="e_price_252_high" placeholder="自动填充" step="0.001"></div>
@@ -289,6 +290,9 @@ async function cloudSave(records){try{await fetch(API_BASE+'/'+API_KEY,{method:'
 function g(id){return document.getElementById(id);}
 function gv(id){var el=g(id);return el?el.value:'';}
 var DISPLAY_NUMBER_INPUT_IDS=['e_price','e_did','e_cn10y','e_did_pct','e_pb','e_pb_pct','e_pe_ttm','e_pe_ttm_pct','e_roe_actual','e_roe','e_spread','e_sma60','e_sma120','e_sma250','e_rsi','e_vol_ratio','e_price_position_252','e_price_252_low','e_price_252_high','e_tech3'];
+var VOLUME_STATUS_CONFIG=JSON.parse(g('volume-status-config').textContent);
+var VOLUME_STATUS_BY_VALUE=Object.fromEntries(VOLUME_STATUS_CONFIG.manualOptions.map(function(item){return[item.value,item];}));
+VOLUME_STATUS_CONFIG.manualOptions.forEach(function(item){var option=document.createElement('option');option.value=item.value;option.textContent=item.display;g('e_vol_state').appendChild(option);});
 function formatDisplayNumber(value,maxDecimals){
   if(value===null||value===undefined||value==='')return'';
   var number=Number(value);
@@ -321,7 +325,7 @@ function storedInputValue(id){
 }
 DISPLAY_NUMBER_INPUT_IDS.forEach(function(id){
   var el=g(id);if(!el)return;
-  el.addEventListener('input',function(){if(el.value!==el.dataset.displayValue)clearDisplayRaw(el);});
+  el.addEventListener('input',function(){el.dataset.manualOverride='true';if(el.value!==el.dataset.displayValue)clearDisplayRaw(el);});
   el.addEventListener('blur',function(){
     if(el.value===''){clearDisplayRaw(el);return;}
     if(el.dataset.rawValue!==undefined&&el.value===el.dataset.displayValue)return;
@@ -329,6 +333,7 @@ DISPLAY_NUMBER_INPUT_IDS.forEach(function(id){
     setDisplayNumberValue(id,number);
   });
 });
+var volumeStateInput=g('e_vol_state');if(volumeStateInput)volumeStateInput.addEventListener('change',function(){volumeStateInput.dataset.manualOverride='true';});
 (function(){
 var d=new Date();
 g('header-date').value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -375,8 +380,8 @@ function pricePosition252Score(position){var v=normalizePercent(position);if(v==
 function manualPricePositionFallback(key){var map={low:{position:20,score:7,label:'低位'},rel_low:{position:30,score:5.25,label:'偏低'},neutral:{position:50,score:3.5,label:'中性'},rel_high:{position:70,score:1.5,label:'偏高'},hot:{position:90,score:0,label:'偏热'}};if(!map[key])return null;return Object.assign({low:null,high:null,estimated:true,fallbackUsed:true},map[key]);}
 function resolvePricePosition252(price){var typedPosition=normalizePercent(numericInputValue('e_price_position_252'));var low=numericInputValue('e_price_252_low'),high=numericInputValue('e_price_252_high');var source=latestPricePosition252||{};var position=typedPosition;if(position===null&&!isNaN(price)&&!isNaN(low)&&!isNaN(high)&&high!==low)position=normalizePercent((price-low)/(high-low)*100);if(position===null)position=normalizePercent(source.value);var manual=manualPricePositionFallback(gv('e_pp252_fallback'));if(manual)return manual;var info=pricePosition252Score(position);return{position:position,low:Number.isFinite(low)?low:(source.low??null),high:Number.isFinite(high)?high:(source.high??null),estimated:!!source.estimated,fallbackUsed:false,score:info.score,label:info.label};}
 function clearAll(){
-DISPLAY_NUMBER_INPUT_IDS.forEach(function(id){var el=g(id);if(el){el.value='';clearDisplayRaw(el);}});
-['e_pp252_fallback','e_vol_state'].forEach(function(id){var el=g(id);if(el){el.value='';el.classList.remove('sel');}});latestPricePosition252=null;
+DISPLAY_NUMBER_INPUT_IDS.forEach(function(id){var el=g(id);if(el){el.value='';clearDisplayRaw(el);delete el.dataset.manualOverride;}});
+['e_pp252_fallback','e_vol_state'].forEach(function(id){var el=g(id);if(el){el.value='';el.classList.remove('sel');delete el.dataset.manualOverride;}});latestPricePosition252=null;
 g('e_spread').value='';;
 var cr=g('calcResult');if(cr)cr.classList.remove('show');}
 // ─── 指数选择器 ────────────────────────────────────────────
@@ -457,7 +462,7 @@ function mapSnapshotIndexToFormData(snapshot, code){
   }
   var item = snapshot.indices.find(function(candidate){ return candidate.code === code; });
   if(!item || !item.kline || !item.valuation) throw new Error('快照缺少指数 '+code);
-  var v=item.valuation,k=item.kline;
+  var v=item.valuation,k=item.kline,t=item.technical||null;
   return {
     _mode:'latest_snapshot',_fetchedDate:snapshot.as_of_date,index:item.code,name:item.name,
     instrument_type:'index',price_unit:'index_points',price:k.close,price_date:k.date,
@@ -465,7 +470,14 @@ function mapSnapshotIndexToFormData(snapshot, code){
     did_pct:v.didPercentileFullHistory,pb:v.pb,pb_pct:v.pbPercentileFullHistory,
     pe_ttm:v.pe_ttm,pe_ttm_pct:v.peTtmPercentileFullHistory,
     roe:v.roe,roe_implied_ttm:v.roeImpliedTtm,roe_display:v.roeImpliedTtm*100,
-    estimated:v.estimated,source:v.source,update_time:item.update_time,fallback_used:item.fallback_used
+    estimated:v.estimated,source:v.source,update_time:item.update_time,fallback_used:item.fallback_used,
+    sma60:t&&t.sma60,sma120:t&&t.sma120,sma250:t&&t.sma250,rsi:t&&t.rsi14,
+    vol_ratio:t&&t.volumeRatio5d,volume_status:t&&t.volumeStatus,
+    price_position_252:t&&t.pricePosition252,price_252_low:t&&t.price252Low,
+    price_252_high:t&&t.price252High,price_position_252_estimated:t&&t.pricePosition252Estimated,
+    price_position_252_label:t&&t.pricePosition252Label,technical_date:t&&t.date,
+    technical_source:t&&t.source,technical_quality:t&&t.quality,
+    technical_fallback_used:t&&t.fallbackUsed,technical_available:!!t
   };
 }
 
@@ -475,7 +487,7 @@ function applyDivData(d){
   var isArchived = false;
   var isHist     = false;
 
-  function setV(id, val){return setDisplayNumberValue(id,val);}
+  function setV(id, val){var el=g(id);if(el&&el.dataset.manualOverride==='true')return false;return setDisplayNumberValue(id,val);}
 
   // 价格
   if(setV('e_price', d.price)) filled.push('价格='+formatDisplayNumber(d.price)); else missing.push('价格');
@@ -515,6 +527,10 @@ function applyDivData(d){
     setV('e_vol_ratio', d.vol_ratio);
     filled.push('量比='+formatDisplayNumber(d.vol_ratio));
   } else { missing.push('量比(历史无此数据)'); }
+  var volumeSelect=g('e_vol_state');
+  if(d.volume_status&&volumeSelect&&volumeSelect.dataset.manualOverride!=='true'&&Array.from(volumeSelect.options).some(function(option){return option.value===d.volume_status;})){
+    volumeSelect.value=d.volume_status;volumeSelect.classList.add('sel');filled.push('成交量状态='+d.volume_status);
+  } else if(!d.volume_status){missing.push('成交量状态(自动数据缺失，保留手动)');}
 
   // 组装提示消息
   var srcDate = d._fetchedDate || new Date().toISOString().slice(0,10);
@@ -535,6 +551,7 @@ function applyDivData(d){
   msg += '<div style="margin-top:6px;padding:6px 9px;background:#f8fafc;border-radius:7px;border:.5px solid #e2e8f0;font-size:10px;color:#6b7280">';
   msg += '<b>📆 数据日期</b>：指数点位 @ '+(d.price_date||srcDate)+' · DID @ '+(d.did_date||srcDate);
   msg += '<br><b>来源</b>：'+(d.source||'未提供')+' · 更新 '+(d.update_time||'未提供')+' · estimated='+(d.estimated===true?'true':'false');
+  msg += '<br><b>技术指标</b>：'+(d.technical_source||'无technical，保留手动fallback')+' · 日期 '+(d.technical_date||'未提供')+' · quality='+(d.technical_quality||'未提供')+' · estimated='+(d.price_position_252_estimated===true?'true':'false')+' · fallback='+(d.technical_fallback_used===true?'true':'false');
   if(uniq.length > 1) msg += '<br><span style="color:#d97706;font-weight:600">⚠️ 中A市场休市日不同，部分数据日期存在差异</span>';
   msg += '</div>';
 
@@ -557,12 +574,12 @@ function showDivManualReminder(){
   }
   remind.innerHTML = '<strong>📝 剩余需手动填写的项目：</strong><br>'
     + '① 10Y国债收益率（本轮未接入）<br>'
-    + '② 技术指标与量比（本轮不处理）<br>'
+    + '② 成交量状态（自动失败时保留手动）<br>'
     + '③ Andean bull/bear 值 + 趋势 → TradingView<br>'
     + '④ MACD 颜色 + 零轴 → TradingView<br>'
     + '⑤ Squeeze 颜色 + 中轴 → TradingView<br>'
     + '⑥ 转变信号（主观判断）<br>'
-    + '<span style="color:#059669">✅ 自动填入：指数点位 / DID / DID百分位 / PB百分位 / 隐含ROE估算</span>';
+    + '<span style="color:#059669">✅ technical存在时自动填入：SMA / Wilder RSI14 / 前5日量比 / 252日位置</span>';
   remind.style.display = 'block';
 }
 
@@ -602,17 +619,9 @@ var tech3=Math.min(10,Math.max(0,parseInt(gv('e_tech3'))||0));
 sb('tech3',tech3,10);sp('tech3',tech3,10);sd('tech3',tech3>=8?'强共振':tech3>=6?'偏多':tech3>=4?'中性':tech3>=2?'偏空':'弱势');techTotal+=tech3;
 var rsiS=isNaN(rsi)?0:(rsi<=20?10:rsi<=25?9:rsi<=30?8:rsi<=35?7:rsi<=40?6:rsi<=45?5:rsi<=50?4:rsi<=55?3:rsi<=60?2:0);
 sb('rsi',rsiS,10);sp('rsi',rsiS,10);sd('rsi',isNaN(rsi)?'未填入':rsi<=30?'超卖 底部区':rsi<=40?'偏低 关注':rsi<=50?'中性偏低':'高位');techTotal+=rsiS;
-var volS=2;
-if(volState==='down_shrink'){volS=5;}
-else if(volState==='down_mild'){volS=4;}
-else if(volState==='down_vol'){volS=2;}
-else if(volState==='down_big'){volS=0;}
-else if(volState==='flat'){volS=2;}
-else if(volState==='up_shrink'){volS=4;}
-else if(volState==='up_mild'){volS=5;}
-else if(volState==='up_big'){volS=2;}
-else if(!isNaN(volRatio)){volS=volRatio<=0.7?4:volRatio<=1.0?3:volRatio<=1.5?2:0;}
-sb('vol',volS,5);sp('vol',volS,5);sd('vol',volState==='down_shrink'?'缩量阴跌 健康洗盘★':volState==='down_mild'?'温和缩量下跌':volState==='down_vol'?'放量下跌 警惕':volState==='down_big'?'巨量抛盘 风险':volState==='flat'?'横盘平量':volState==='up_shrink'?'缩量上涨 惜售':volState==='up_mild'?'温和放量上涨 健康★':volState==='up_big'?'巨量上涨 过热':'未填入');techTotal+=volS;
+var volumeRule=VOLUME_STATUS_BY_VALUE[volState]||null;
+var volS=volumeRule?volumeRule.score:2;
+sb('vol',volS,5);sp('vol',volS,5);sd('vol',volumeRule?volumeRule.display:'未填入');techTotal+=volS;
 g('subtotal-tech').textContent=formatDisplayNumber(techTotal)+' / 40';g('subtotal-tech').style.color=sc(techTotal,40);
 total=valTotal+techTotal;
 // ====== 趋势动量加分（路线B）======
