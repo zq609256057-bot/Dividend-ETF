@@ -166,6 +166,15 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 </div>
 </div>
 
+<!-- Data freshness status (display only; does not affect scoring or inputs) -->
+<div id="data-status-panel" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:-8px 0 16px;padding:9px 12px;background:#f8fafc;border:.5px solid #e2e8f0;border-radius:10px;font-size:10.5px;color:#64748b">
+<div style="display:flex;gap:14px;flex-wrap:wrap">
+<span>市场数据日期：<strong id="data-status-market-date" style="color:#334155">读取中...</strong></span>
+<span>系统更新时间：<strong id="data-status-generated-at" style="color:#334155">读取中...</strong></span>
+</div>
+<strong id="data-status-state" style="color:#64748b">⚪ 正在检查数据状态</strong>
+</div>
+
 <!-- Score Hero -->
 <div class="score-hero">
 <h2 style="font-size:14px;font-weight:700;color:var(--muted);margin-bottom:4px">综合值博率评分</h2>
@@ -395,6 +404,49 @@ var LOCAL_SNAPSHOT_API = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? 
 var DEPLOYMENT_CANDIDATE_URL = 'https://dividend-dashboard-api.zq609256057.workers.dev';
 var DATA_API_DIV = window.DIVIDEND_SNAPSHOT_API || LOCAL_SNAPSHOT_API || DEPLOYMENT_CANDIDATE_URL;
 
+function formatBeijingDateTime(value){
+  if(!value)return'--';
+  var d=new Date(value);if(isNaN(d.getTime()))return'--';
+  var parts=new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(d);
+  var map={};parts.forEach(function(part){map[part.type]=part.value;});
+  return map.year+'-'+map.month+'-'+map.day+' '+map.hour+':'+map.minute;
+}
+
+function calendarAgeDays(dateText){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(dateText||''))return Infinity;
+  var nowParts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+  var map={};nowParts.forEach(function(part){map[part.type]=part.value;});
+  var today=Date.UTC(Number(map.year),Number(map.month)-1,Number(map.day));
+  var bits=dateText.split('-').map(Number);var business=Date.UTC(bits[0],bits[1]-1,bits[2]);
+  return Math.floor((today-business)/86400000);
+}
+
+function renderDataFreshnessStatus(snapshot,health,error){
+  var marketEl=g('data-status-market-date'),generatedEl=g('data-status-generated-at'),stateEl=g('data-status-state');
+  if(!marketEl||!generatedEl||!stateEl)return;
+  marketEl.textContent=snapshot&&snapshot.as_of_date?snapshot.as_of_date:'--';
+  generatedEl.textContent=snapshot&&snapshot.generated_at?formatBeijingDateTime(snapshot.generated_at):'--';
+  var healthy=!error&&snapshot&&health&&health.status==='ok'&&health.as_of_date===snapshot.as_of_date;
+  if(!healthy){
+    stateEl.textContent='🔴 数据异常';stateEl.style.color='#dc2626';
+    stateEl.title=error?String(error.message||error):'health 与 latest 状态不一致';return;
+  }
+  if(calendarAgeDays(snapshot.as_of_date)>3){
+    stateEl.textContent='🟡 数据等待更新';stateEl.style.color='#d97706';
+    stateEl.title='市场数据日期距今超过3个自然日';return;
+  }
+  stateEl.textContent='🟢 自动更新正常';stateEl.style.color='#059669';stateEl.title='latest 与 health 校验一致';
+}
+
+function loadDataFreshnessStatus(){
+  Promise.all([
+    fetch(DATA_API_DIV+'/latest',{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('latest HTTP '+r.status);return r.json();}).then(function(value){return{value:value};}).catch(function(error){return{error:error};}),
+    fetch(DATA_API_DIV+'/health',{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('health HTTP '+r.status);return r.json();}).then(function(value){return{value:value};}).catch(function(error){return{error:error};})
+  ]).then(function(results){renderDataFreshnessStatus(results[0].value||null,results[1].value||null,results[0].error||results[1].error||null);});
+}
+
+loadDataFreshnessStatus();
+
 function selectIndex(idxCode, etfCode) {
   _selIndex = idxCode;
   _selEtf   = etfCode || '';
@@ -449,6 +501,7 @@ function fetchAndFillDiv(date, btn){
       clearTimeout(timeout);
       if(btn){btn.textContent=origText;btn.disabled=false;}
       applyDivData(mapSnapshotIndexToFormData(d, _selIndex));
+      loadDataFreshnessStatus();
       if(date && g('header-date')) g('header-date').value = date;
     })
     .catch(function(err){
