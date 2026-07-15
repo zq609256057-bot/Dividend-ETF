@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "dividend_dashboard_production_baseline_v1",
+  "product": "Dividend Dashboard",
+  "version": "V1.2",
+  "releaseDate": "2026-07-15",
+  "frozenAt": "2026-07-15T14:46:26+08:00",
+  "production": {
+    "pagesUrl": "https://zq609256057-bot.github.io/Dividend-ETF/",
+    "workerUrl": "https://dividend-dashboard-api.zq609256057.workers.dev",
+    "branch": "main",
+    "releaseCommit": "6c5500ef041a80fe377d7009602e4e798571de77",
+    "releaseCommitMessage": "Deploy Dividend Dashboard V1.2 Historical Backfill",
+    "origin": "https://github.com/zq609256057-bot/Dividend-ETF.git",
+    "pagesAction": {
+      "runId": 29394393506,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/zq609256057-bot/Dividend-ETF/actions/runs/29394393506"
+    },
+    "workerVersion": "87afacd2-587f-43bf-ba2b-0f213fc8d97f",
+    "workerTrafficPercent": 100,
+    "previousWorkerVersion": "5b423a8b-9fc7-4b30-8ce2-d278966a2df7"
+  },
+  "sha256": {
+    "html": "644e0c2c2e561c3b6e6c6f3dd77258994c3d99bd0b172b50977d16dac904dd47",
+    "historyBackfillAdapter": "520a17da78a7bb5abca491072d93458d2289c13b084373450c2a2a9532b1d1eb",
+    "worker": "a9bfe25723518ab7c14782f57ba141e89f6e30deff99c90b6e2261e72361a516",
+    "pineV7Engine": "2934b556981283b8b1e2fc3fb5bc626b095ee5111900824bb72f94351660ca55",
+    "pineResolver": "29c039e13662d174c9c85c0540bd4782d234cc14c7331aa26518dbfa438e43f4",
+    "pineAutoConfig": "c7d2e8e3fb9bccb04a3be8fadfa5cd1c3e70b945febae434099ec0fa9a0a5cb3",
+    "scoringRules": "98146e82f17a273c6d96c064033c18f3ada98a6a5e73d48ae7cf355fe06de022",
+    "indexRegistryConfig": "65ebdd2a0972cc934e31f335afd54f88456287a52d3e58676706f69ee9a2c51e",
+    "indexRegistryRuntime": "989145d343f5f9b24e33880c0686830eb8a019f20f96c0441cc407f2a0df8b5b",
+    "marketKlineSqlite": "9bbec9ecc3f6344bb8ebca9ea3e4810ba069b1014cbdf1498d71e23a82f0817d",
+    "historyCacheManifest": "891ef2c460f946444114e385796010de0dca1ccbaf723c749eaa86d28f3e7f03"
+  },
+  "historyCache": {
+    "status": "materialized_and_production_verified",
+    "keyPrefix": "history_cache:",
+    "records": 5976,
+    "chunks": 30,
+    "codes": ["000922", "930955"],
+    "minDate": "2008-05-26",
+    "maxDate": "2026-07-14",
+    "databaseReadContract": "mode=ro&immutable=1; PRAGMA query_only=ON",
+    "isolatedFrom": ["latest", "archive"]
+  },
+  "freeze": {
+    "businessCodeChanged": false,
+    "scoringModelChanged": false,
+    "pineChanged": false,
+    "workerContractChanged": false,
+    "documentationCommitMessage": "Freeze Dividend Dashboard V1.2 production baseline"
+  }
+}
