@@ -67,7 +67,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 .entry-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%}
 .btn-row{display:flex;flex-direction:row;flex-wrap:nowrap;gap:8px;margin-top:12px;width:100%}
 .btn-calc{flex:2;min-width:0;padding:10px;background:#059669;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
-.btn-fill{flex:2;min-width:0;padding:10px;background:var(--purple);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-fill{flex:2;min-width:0;padding:10px;background:var(--purple);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:normal;overflow:hidden;text-overflow:ellipsis;overflow-wrap:anywhere;line-height:1.25}
 .btn-clear{flex:1;min-width:0;padding:10px;background:#f3f4f6;color:var(--muted);border:1px solid #e5e7eb;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
 .calc-result{display:none;margin-top:10px;padding:10px 12px;background:#f0fdf4;border:.5px solid #bbf7d0;border-radius:10px;font-size:11px;color:#065f46}
 .calc-result.show{display:block}
@@ -80,8 +80,11 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 .date-input::-webkit-calendar-picker-indicator{opacity:.4;cursor:pointer;width:14px;height:14px;margin-left:2px}
 .header-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap;background:#fef3c7;color:#92400e}
 @media(min-width:480px){.kpi-grid{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:479px){.btn-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.btn-row .btn-fill,.btn-row .btn-calc{min-height:44px;white-space:normal;overflow:hidden;overflow-wrap:anywhere;line-height:1.25}.btn-row .btn-clear{grid-column:1/-1;min-height:40px}.index-selector-buttons button{max-width:100%;white-space:normal!important;overflow-wrap:anywhere}}
 </style>
 <link rel="stylesheet" href="pine_auto_candidate.css">
+<script src="index_registry.js"></script>
+<script src="dashboard_v11_core.js"></script>
 </head>
 <body>
 
@@ -92,11 +95,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 <!-- 指数选择器 -->
 <div style="margin-bottom:14px;padding:12px;background:#f8f5ff;border:.5px solid #e9d5ff;border-radius:10px;width:100%;box-sizing:border-box">
 <div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:8px">🔭 选择红利指数</div>
-<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;width:100%">
-<button onclick="selectIndex('000922','')" id="btn-000922" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e9d5ff;background:#fff;color:#7c3aed;white-space:nowrap">中证红利 000922</button>
-<button onclick="selectIndex('930955','')" id="btn-930955" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e9d5ff;background:#fff;color:#7c3aed;white-space:nowrap">红利低波100 930955（主标的）</button>
-</div>
-<div id="selected-index-label" style="font-size:10px;color:#9ca3af;margin-top:6px">当前：红利低波100 930955（指数点位）</div>
+<div id="index-selector-buttons" class="index-selector-buttons" style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;width:100%"></div>
+<div id="selected-index-label" style="font-size:10px;color:#9ca3af;margin-top:6px">正在加载指数配置…</div>
 </div>
 
 <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase">📈 估值面</div>
@@ -151,7 +151,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 <div style="font-size:11px;font-weight:700;color:#1e40af;margin-bottom:7px">📅 回填历史某交易日数据</div>
 <div style="display:flex;gap:8px;align-items:center">
 <input type="date" id="backfill-date-div" style="flex:1;font-family:monospace;font-size:12px;padding:7px 10px;border:1px solid #bfdbfe;border-radius:8px;background:#fff;color:#374151;outline:none">
-<button onclick="autoFillHistoryDiv()" style="padding:8px 14px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">⏮ 回填该日</button>
+<button id="backfill-button-div" onclick="fillHistoricalDate()" style="padding:8px 14px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">⏮ 回填该日</button>
 </div>
 <p style="font-size:10px;color:#6b7280;margin-top:6px;line-height:1.5">历史归档命中时返回真实值（含DID/PB历史值）；未归档日期DID/PB百分位需等系统积累后才准确。</p>
 </div>
@@ -162,7 +162,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 <!-- Header -->
 <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
 <div style="flex:1;min-width:0">
-<h1 id="etf-title" contenteditable="true" spellcheck="false" style="font-size:20px;font-weight:700;outline:none;border-radius:6px;padding:2px 4px;margin-left:-4px;cursor:text" title="点击编辑标题"> · </h1>
+<h1 id="etf-title" style="font-size:20px;font-weight:700;outline:none;border-radius:6px;padding:2px 4px;margin-left:-4px">正在加载指数…</h1>
 <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;margin-top:4px">
 <div style="display:flex;align-items:center;gap:4px"><span style="font-size:12px;color:var(--muted)">多维量化看板 ·</span><input type="date" id="header-date" class="date-input"></div>
 <span id="header-badge" class="header-badge">填入数据后计算</span>
@@ -401,8 +401,9 @@ DISPLAY_NUMBER_INPUT_IDS.forEach(function(id){var el=g(id);if(el){el.value='';cl
 ['e_pp252_fallback','e_vol_state'].forEach(function(id){var el=g(id);if(el){el.value='';el.classList.remove('sel');delete el.dataset.manualOverride;}});latestPricePosition252=null;
 g('e_spread').value='';;
 var cr=g('calcResult');if(cr)cr.classList.remove('show');}
-// ─── 指数选择器 ────────────────────────────────────────────
-var _selIndex = '930955';
+// ─── 指数选择器（唯一入口：index_registry.js）──────────────
+var INDEX_REGISTRY=(window.DIVIDEND_INDEX_REGISTRY||[]).filter(function(item){return item&&item.enabled;});
+var _selIndex = window.DIVIDEND_DEFAULT_INDEX || '';
 var _selEtf   = '';
 var LOCAL_SNAPSHOT_API = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? new URLSearchParams(location.search).get('snapshot_api') : null;
 var DEPLOYMENT_CANDIDATE_URL = 'https://dividend-dashboard-api.zq609256057.workers.dev';
@@ -451,34 +452,98 @@ function loadDataFreshnessStatus(){
 
 loadDataFreshnessStatus();
 
+function getIndexConfig(code){return INDEX_REGISTRY.find(function(item){return item.code===code;})||null;}
+function renderIndexSelector(){
+  var wrap=g('index-selector-buttons');if(!wrap)return;
+  wrap.innerHTML='';
+  INDEX_REGISTRY.forEach(function(item){
+    var button=document.createElement('button');
+    button.type='button';button.id='btn-'+item.code;button.textContent=item.name+' '+item.code;
+    button.style.cssText='padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e9d5ff;background:#fff;color:#7c3aed;white-space:nowrap';
+    button.addEventListener('click',function(){selectIndex(item.code,'');});wrap.appendChild(button);
+  });
+}
+function updateIndexTitle(config){var title=g('etf-title');if(title&&config)title.textContent=config.name+' · '+config.code;}
 function selectIndex(idxCode, etfCode) {
-  _selIndex = idxCode;
+  var config=getIndexConfig(idxCode);
+  if(!config){console.error('[Dividend V1.1] 指数配置不存在或未启用:',idxCode);showMsg('⚠️ 指数配置不存在或未启用：'+idxCode);return false;}
+  _selIndex = config.code;
   _selEtf   = etfCode || '';
   // 高亮按钮
-  ['000922','930955'].forEach(function(c){
-    var b = g('btn-'+c);
-    if(b) { b.style.background = c === idxCode ? '#7c3aed' : '#fff'; b.style.color = c === idxCode ? '#fff' : '#7c3aed'; }
+  INDEX_REGISTRY.forEach(function(item){
+    var b = g('btn-'+item.code);
+    if(b) { b.style.background = item.code === config.code ? '#7c3aed' : '#fff'; b.style.color = item.code === config.code ? '#fff' : '#7c3aed'; }
   });
   var lbl = g('selected-index-label');
-  if(lbl) lbl.textContent = '当前：' + idxCode + (etfCode ? '（ETF ' + etfCode + '）' : '');
+  if(lbl) lbl.textContent = '当前：' + config.name+' '+config.code + (etfCode ? '（ETF ' + etfCode + '）' : '（指数点位）');
+  updateIndexTitle(config);
   // 保存到 localStorage（历史记忆）
-  try { localStorage.setItem('div_sel_index', idxCode); localStorage.setItem('div_sel_etf', etfCode || ''); } catch(e){}
+  try { localStorage.setItem('div_sel_index', config.code); localStorage.setItem('div_sel_etf', etfCode || ''); } catch(e){}
+  return true;
 }
 
 // 初始化：恢复上次选择
 (function(){
+  renderIndexSelector();
+  if(!INDEX_REGISTRY.length){console.error('[Dividend V1.1] index_registry.js 没有启用的指数');var lbl=g('selected-index-label');if(lbl)lbl.textContent='指数配置加载失败';return;}
   try {
     var si = localStorage.getItem('div_sel_index');
-    var se = localStorage.getItem('div_sel_etf');
-    if(['000922','930955'].includes(si)){ selectIndex(si, ''); }
-    else { selectIndex('930955',''); }
-  } catch(e){ selectIndex('930955',''); }
+    if(getIndexConfig(si)){ selectIndex(si, ''); }
+    else { selectIndex(getIndexConfig(_selIndex)?_selIndex:INDEX_REGISTRY[0].code,''); }
+  } catch(e){ selectIndex(getIndexConfig(_selIndex)?_selIndex:INDEX_REGISTRY[0].code,''); }
 })();
 
 // 自动填入今日数据
 function autoFill(){
   fetchAndFillDiv(null, document.querySelector('.btn-fill'));
 }
+
+function localToday(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function historicalError(kind,message){var error=new Error(message);error.kind=kind;return error;}
+function clearHistoricalAutoFields(){
+  ['e_price','e_did','e_cn10y','e_did_pct','e_pb','e_pb_pct','e_pe_ttm','e_pe_ttm_pct','e_roe_actual','e_roe','e_spread','e_sma60','e_sma120','e_sma250','e_rsi','e_vol_ratio','e_price_position_252','e_price_252_low','e_price_252_high'].forEach(function(id){var el=g(id);if(el){el.value='';clearDisplayRaw(el);delete el.dataset.manualOverride;}});
+  var volume=g('e_vol_state');if(volume){volume.value='';volume.classList.remove('sel');delete volume.dataset.manualOverride;}latestPricePosition252=null;
+}
+function mapLegacyHistoricalData(item,date){
+  var did=Number(item.did);var roe=Number(item.roe);
+  return {_mode:item._mode||'archived',_fetchedDate:item._fetchedDate||item.date||date,index:item.index||_selIndex,name:item.name||'',price:item.price??item.current_price,price_date:item.price_date||item.date||date,
+    did:Number.isFinite(did)?did:null,did_date:item.did_date||item.date||date,did_pct:item.did_pct&&typeof item.did_pct==='object'?item.did_pct.value:item.did_pct,
+    pb:item.pb,pb_pct:item.pb_pct&&typeof item.pb_pct==='object'?item.pb_pct.value:item.pb_pct,pe_ttm:item.pe_ttm,pe_ttm_pct:item.pe_ttm_pct,
+    roe:item.roe,roe_display:Number.isFinite(roe)?(Math.abs(roe)<=1?roe*100:roe):null,estimated:item.estimated,source:item.source||'historical_archive',update_time:item.update_time,
+    cn10y:item.cn10y,yield_spread:item.yield_spread??item.spread,macro_available:item.cn10y!=null,macro_date:item.cn10y_date||item.date||date,macro_valuation_date:item.did_date||item.date||date,
+    sma60:item.sma60,sma120:item.sma120,sma250:item.sma250,rsi:item.rsi??item.rsi14,vol_ratio:item.vol_ratio??item.volume_ratio_5d,volume_status:item.volume_status,
+    price_position_252:item.price_position_252,price_252_low:item.price_252_low,price_252_high:item.price_252_high,technical_date:item.technical_date||item.date||date,technical_source:item.technical_source||'historical_archive',technical_available:true};
+}
+async function loadHistoricalData(date){
+  var config=getIndexConfig(_selIndex);if(!config)throw historicalError('CONFIG_ERROR','当前指数配置不可用');
+  var url=DATA_API_DIV+'/archive?index='+encodeURIComponent(config.apiCode)+'&date='+encodeURIComponent(date);
+  var response;
+  try{response=await fetch(url,{cache:'no-store'});}catch(error){throw historicalError('API_FAILED','API连接失败：'+(error.message||error));}
+  var payload=null;try{payload=await response.json();}catch(error){if(!response.ok)throw historicalError('API_FAILED','API返回不可解析（HTTP '+response.status+'）');}
+  if(!response.ok){
+    var detail=payload&&(payload.detail||payload.error||payload.reason);
+    if(response.status===404)throw historicalError('DATA_NOT_FOUND','数据不存在：'+date+(detail?'（'+detail+'）':''));
+    if(response.status===400||response.status===422)throw historicalError('DATE_UNAVAILABLE','日期不可用：'+date+(detail?'（'+detail+'）':''));
+    throw historicalError('API_FAILED','API失败：HTTP '+response.status+(detail?'（'+detail+'）':''));
+  }
+  var item=DividendV11.unwrapHistoricalPayload(payload);
+  if(!item)throw historicalError('DATA_NOT_FOUND','数据不存在：'+date);
+  return item.schema_version==='dividend_indices_snapshot_v1'?mapSnapshotIndexToFormData(item,_selIndex):mapLegacyHistoricalData(item,date);
+}
+async function fillHistoricalDate(){
+  var input=g('backfill-date-div'),button=g('backfill-button-div');var date=input&&input.value;
+  if(!date){console.error('[Dividend V1.1 historical fill]',{kind:'DATE_UNAVAILABLE',error:'未选择日期'});showMsg('⚠️ 日期不可用：请先选择历史交易日');return;}
+  var parsed=new Date(date+'T00:00:00');
+  if(isNaN(parsed.getTime())||date>localToday()||parsed.getDay()===0||parsed.getDay()===6){console.error('[Dividend V1.1 historical fill]',{date:date,index:_selIndex,kind:'DATE_UNAVAILABLE'});showMsg('⚠️ 日期不可用：'+date+' 不是可回填的历史交易日');return;}
+  var original=button?button.textContent:'';if(button){button.textContent='⏳ 回填中...';button.disabled=true;}showMsg('⏳ 正在加载 '+date+' 的历史数据…');
+  try{
+    var data=await loadHistoricalData(date);clearHistoricalAutoFields();applyDivData(data,{force:true,historical:true});
+    if(g('header-date'))g('header-date').value=date;
+    showMsg('✅ 已回填 <strong>'+date+'</strong> · '+(getIndexConfig(_selIndex)||{}).name+' '+_selIndex+'。所有可用指标已更新，请点击「计算评分」。');
+  }catch(error){console.error('[Dividend V1.1 historical fill]',{date:date,index:_selIndex,kind:error.kind||'API_FAILED',error:error});showMsg('⚠️ 回填失败：'+(error.message||'API失败'));}
+  finally{if(button){button.textContent=original;button.disabled=false;}}
+}
+function autoFillHistoryDiv(){return fillHistoricalDate();}
 
 // 统一抓取函数
 function fetchAndFillDiv(date, btn){
@@ -487,11 +552,7 @@ function fetchAndFillDiv(date, btn){
   var label = date ? '历史数据（'+date+'）' : '最新数据（'+_selIndex+'）';
   showMsg('⏳ 正在抓取 '+label+'，请稍候…');
 
-  if(date){
-    if(btn){btn.textContent=origText;btn.disabled=false;}
-    showMsg('⚠️ 当前冻结契约仅提供最新快照，不提供历史日期回填');
-    return;
-  }
+  if(date){if(btn){btn.textContent=origText;btn.disabled=false;}return fillHistoricalDate();}
   var url = DATA_API_DIV + '/latest';
 
   var timeout = setTimeout(function(){
@@ -521,11 +582,12 @@ function mapSnapshotIndexToFormData(snapshot, code){
   if(!snapshot || snapshot.schema_version !== 'dividend_indices_snapshot_v1' || !Array.isArray(snapshot.indices)){
     throw new Error('快照契约无效');
   }
-  var item = snapshot.indices.find(function(candidate){ return candidate.code === code; });
+  var registryItem=getIndexConfig(code);var apiCode=registryItem?registryItem.apiCode:code;
+  var item = snapshot.indices.find(function(candidate){ return candidate.code === apiCode; });
   if(!item || !item.kline || !item.valuation) throw new Error('快照缺少指数 '+code);
   var v=item.valuation,k=item.kline,t=item.technical||null,m=item.macro||null;
   return {
-    _mode:'latest_snapshot',_fetchedDate:snapshot.as_of_date,index:item.code,name:item.name,
+    _mode:'latest_snapshot',_fetchedDate:snapshot.as_of_date,index:code,name:registryItem?registryItem.name:item.name,
     instrument_type:'index',price_unit:'index_points',price:k.close,price_date:k.date,
     dividend_yield:v.dividend_yield,did:v.dividend_yield*100,did_date:v.date,
     did_pct:v.didPercentileFullHistory,pb:v.pb,pb_pct:v.pbPercentileFullHistory,
@@ -547,12 +609,13 @@ function mapSnapshotIndexToFormData(snapshot, code){
 }
 
 // 将 Worker 返回数据填入表单
-function applyDivData(d){
+function applyDivData(d,options){
+  options=options||{};
   var filled = [], missing = [];
-  var isArchived = false;
-  var isHist     = false;
+  var isArchived = d&&d._mode === 'archived';
+  var isHist     = !!options.historical || isArchived || (d&&d._mode === 'historical');
 
-  function setV(id, val){var el=g(id);if(el&&el.dataset.manualOverride==='true')return false;return setDisplayNumberValue(id,val);}
+  function setV(id, val){var el=g(id);if(!options.force&&el&&el.dataset.manualOverride==='true')return false;return setDisplayNumberValue(id,val);}
 
   // 价格
   if(setV('e_price', d.price)) filled.push('价格='+formatDisplayNumber(d.price)); else missing.push('价格');
@@ -605,6 +668,8 @@ function applyDivData(d){
 
   // 组装提示消息
   var srcDate = d._fetchedDate || new Date().toISOString().slice(0,10);
+  if(g('header-date'))g('header-date').value=srcDate;
+  updateIndexTitle(getIndexConfig(_selIndex));
   var msg = '';
   if(isArchived){
     msg += '<strong style="color:#059669">📦 命中归档库 · '+srcDate+'（真实历史数据）</strong><br>';
@@ -655,6 +720,10 @@ function showDivManualReminder(){
   remind.style.display = 'block';
 }
 
+function maTrendHistory(code,targetDate){
+  return (window._etfHistory||[]).filter(function(record){return record&&record.code===code&&record._form&&(!targetDate||!record.date||record.date<targetDate);}).sort(function(a,b){return (a.date||'').localeCompare(b.date||'');}).slice(-DividendV11.DEFAULT_RULES.historyWindow);
+}
+
 function calcScore(){
 var price=numericInputValue('e_price'),did=numericInputValue('e_did'),cn10y=numericInputValue('e_cn10y');
 var didPct=numericInputValue('e_did_pct'),pbPct=numericInputValue('e_pb_pct'),roe=numericInputValue('e_roe');
@@ -676,13 +745,10 @@ sb('pb',pbS,10);sp('pb',pbS,10);sd('pb',isNaN(pbPct)?'未填入':pbPct<=20?'极�
 var roeS=isNaN(roe)?0:(roe>=12?4:roe>=10?3:roe>=8?2:roe>=6?1:0);
 sb('roe',roeS,4);sp('roe',roeS,4);sd('roe',isNaN(roe)?'未填入':roe>=12?'ROE优秀':roe>=10?'ROE良好':roe>=8?'ROE一般':roe>=6?'ROE偏低':'ROE较弱');valTotal+=roeS;
 g('subtotal-val').textContent=formatDisplayNumber(valTotal)+' / 60';g('subtotal-val').style.color=sc(valTotal,60);
-var maS=4,maDesc='均线数据不足';
-if(!isNaN(price)&&!isNaN(sma250)){var dev=((price-sma250)/sma250*100);
-if(price>sma250&&dev>10){maS=1;maDesc='高于SMA250 +'+formatDisplayNumber(dev)+'% 偏贵';}
-else if(price>sma250){maS=2;maDesc='高于SMA250 +'+formatDisplayNumber(dev)+'%';}
-else if(!isNaN(sma60)&&price>sma60){maS=5;maDesc='SMA60~SMA250之间';}
-else if(dev>-10){maS=6;maDesc='跌破SMA250后'+formatDisplayNumber(dev)+'% 回踩';}
-else{maS=8;maDesc='大幅跌破SMA250 '+formatDisplayNumber(dev)+'%';}}
+var scoreDate=g('header-date')?g('header-date').value:'';
+var maInfo=DividendV11.priceMaStructureScore(price,sma60,sma250,maTrendHistory(_selIndex,scoreDate));
+var maS=maInfo.weightedScore,maRawScore=maInfo.rawScore;
+var maDesc=maInfo.description+' · 原始'+formatDisplayNumber(maRawScore)+'/10'+(maInfo.deviationPercent===null?'':' · 偏离'+formatDisplayNumber(maInfo.deviationPercent)+'%');
 sb('ma',maS,8);sp('ma',maS,8);sd('ma',maDesc);techTotal+=maS;
 var pp252S=pp252.score||0;
 sb('pp252',pp252S,7);sp('pp252',pp252S,7);sd('pp252',pp252.label+(pp252.fallbackUsed?' · 手动fallback':''));techTotal+=pp252S;
@@ -699,8 +765,7 @@ g('subtotal-tech').textContent=formatDisplayNumber(techTotal)+' / 40';g('subtota
 total=valTotal+techTotal;
 // ====== 趋势动量加分（路线B）======
 var _hist=window._etfHistory||[];
-var _titleNow=g('etf-title')?g('etf-title').textContent.trim():'';
-var _cm=_titleNow.match(/\d{6}/);var _code=_cm?_cm[0]:'';
+var _code=_selIndex;
 var _sameCode=_hist.filter(function(r){return (r.code||'')===_code&&r._form;});
 var trendBonus=0,trendItems=[],trendCount=_sameCode.length;
 if(_sameCode.length>=1){
@@ -817,7 +882,7 @@ if(didS>=13)bull.push('DID股息率充裕');if(didS<=7)bear.push('DID偏低偏�
 if(spS>=13)bull.push('股债利差处高位满分区');if(spS<=5)bear.push('股债利差偏低');
 if(bondS>=7)bull.push('CN10Y低位利好股票');if(bondS<=3)bear.push('CN10Y偏高压制估值');
 if(pbS<=4)bear.push('PB百分位偏高');else if(pbS>=8)bull.push('PB百分位低位');
-if(maS>=8)bull.push('价格跌破SMA250回踩支撑');if(maS<=2)bear.push('价格偏离SMA250偏贵');
+if(maRawScore>=9)bull.push('价格跌破SMA250后重新站回支撑');if(maRawScore<=2)bear.push('价格偏离SMA250偏贵');
 if(pp252.position!==null&&pp252.position<=40)bull.push('252日价格位置偏低（'+formatDisplayNumber(pp252.position)+'%）');
 if(pp252.position!==null&&pp252.position>80)bear.push('252日价格位置偏热（'+formatDisplayNumber(pp252.position)+'%）');
 if(tech3<=2)bear.push('三指标偏弱('+tech3+'/10)');if(tech3>=8)bull.push('三指标强共振('+tech3+'/10)');if(!isNaN(rsi)&&rsi<=30)bull.push('RSI超卖区');
@@ -837,8 +902,8 @@ g('summary-card').innerHTML='<div class="card-title">⑦ 综合研判</div>'
 +'<div style="font-size:10px;color:#6b7280;margin-top:4px">'+trendItems.join(' · ')+'</div></div>'
 :'<div style="margin-top:8px;padding:7px 10px;background:#f8fafc;border-radius:8px;font-size:10px;color:#9ca3af">📈 趋势动量：暂无同代码历史记录，保存首条后启用</div>');
 var dateVal=g('header-date').value||new Date().toISOString().slice(0,10);
-var te=g('etf-title');var title=te?te.textContent.trim():' · ';
-var cm=title.match(/\d{6}/);var code=cm?cm[0]:'';
+var te=g('etf-title');var title=te?te.textContent.trim():'';
+var code=_selIndex;
 saveRecord({date:dateVal,code:code,title:title,total:total,valTotal:valTotal,techTotal:techTotal,level:level,
 price:isNaN(price)?null:price,did:isNaN(did)?null:did,cn10y:isNaN(cn10y)?null:cn10y,spread:isNaN(spread)?null:spread,
 _form:(function(){var f={};['e_price','e_did','e_cn10y','e_did_pct','e_pb_pct','e_roe','e_sma60','e_sma120','e_sma250','e_rsi','e_vol_ratio','e_price_position_252','e_price_252_low','e_price_252_high','e_pp252_fallback','e_tech3','e_vol_state'].forEach(function(id){f[id]=DISPLAY_NUMBER_INPUT_IDS.indexOf(id)>=0?storedInputValue(id):gv(id);});
@@ -858,8 +923,7 @@ function renderHistory(records,filterCode){
 var wrap=g('history-table-wrap');
 if(!records||records.length===0){wrap.innerHTML='<p style="font-size:12px;color:var(--muted)">暂无记录，计算评分后自动保存</p>';return;}
 var rev=[].concat(records).reverse();
-var titleVal=g('etf-title')?g('etf-title').textContent:'';
-var cm2=titleVal.match(/\d{6}/);var curCode=cm2?cm2[0]:(rev[0]?rev[0].code||'':'');
+var curCode=_selIndex||(rev[0]?rev[0].code||'':'');
 var searchCode=(filterCode||'').trim();
 var isSearch=searchCode.length===6;
 // 按代码分组（每组保留全部记录）
@@ -943,7 +1007,7 @@ var r=records[idx];if(!r._form){showMsg('⚠️ 旧版记录无法回放');retur
 var f=r._form;Object.keys(f).forEach(function(id){var el=g(id);if(!el)return;if(DISPLAY_NUMBER_INPUT_IDS.indexOf(id)>=0){el.value='';clearDisplayRaw(el);if(f[id]!==''&&f[id]!=null)setDisplayNumberValue(id,f[id]);}else{el.value=f[id]||'';clearDisplayRaw(el);}});
 ['e_pp252_fallback','e_vol_state'].forEach(function(id){var el=g(id);if(el&&f[id])el.classList.add('sel');});
 var hd=g('header-date');if(hd)hd.value=r.date;
-var te=g('etf-title');if(te&&r.title)te.textContent=r.title;
+if(r.code&&getIndexConfig(r.code))selectIndex(r.code,'');
 updateSpread();calcScore();
 var ec=document.querySelector('.card');if(ec)ec.scrollIntoView({behavior:'smooth',block:'start'});
 showMsg('🔄 已回放 <strong>'+r.date+'</strong>（'+(r.code||'')+'）评分 '+formatDisplayNumber(r.total)+'/100');});}
@@ -1028,7 +1092,7 @@ function showMonthly(){
   md.innerHTML='<div style="background:#fff;margin:20px auto;max-width:480px;border-radius:16px;padding:20px;position:relative;">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
     +'<span style="font-size:14px;font-weight:700;color:#111827;">📊 月度汇总分析</span>'
-    '<button onclick="document.getElementById(\'monthly-modal\').style.display=\'none\'" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280;">×</button>'
+    +'<button onclick="document.getElementById(\'monthly-modal\').style.display=\'none\'" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280;">×</button>'
     +'</div><div id="monthly-content">'+html+'</div></div>';
   document.body.appendChild(md);
   md.style.display='block';
@@ -1073,11 +1137,7 @@ window.addEventListener('message', function(e) {
   setField('e_price_252_high', m.price_252_high != null ? m.price_252_high : m.price252High);
   latestPricePosition252={value:m.price_position_252??m.pricePosition252??null,low:m.price_252_low??m.price252Low??null,high:m.price_252_high??m.price252High??null,estimated:!!(m.price_position_252_estimated??m.pricePosition252Estimated)};
   // 更新标题代码
-  var te = g('etf-title');
-  if (te && m.code) {
-    var cur = te.textContent.trim();
-    if (cur === '·' || cur === ' · ') te.textContent = '红利ETF · ' + m.code;
-  }
+  if (m.code && getIndexConfig(m.code)) selectIndex(m.code,'');
   updateSpread();
   showMsg('✅ 数据助手已自动填入 ' + (m.code||'') + ' 的数据，请补充技术指标后计算评分', 'show');
 });
