@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "pine_formal_switch_backup_manifest_v1",
+  "createdAt": "2026-07-15T15:36:53+08:00",
+  "backupRoot": "production_backup/pine_formal_switch_20260715T153653",
+  "files": [
+    {
+      "path": "HTML/index.html",
+      "backupPath": "production_backup/pine_formal_switch_20260715T153653/HTML/index.html",
+      "sha256": "644e0c2c2e561c3b6e6c6f3dd77258994c3d99bd0b172b50977d16dac904dd47",
+      "size": 96061,
+      "mtime": "2026-07-15T14:23:01+08:00",
+      "backupMatches": true
+    },
+    {
+      "path": "github_pages_repo/index.html",
+      "backupPath": "production_backup/pine_formal_switch_20260715T153653/github_pages_repo/index.html",
+      "sha256": "644e0c2c2e561c3b6e6c6f3dd77258994c3d99bd0b172b50977d16dac904dd47",
+      "size": 96061,
+      "mtime": "2026-07-15T14:23:16+08:00",
+      "backupMatches": true
+    },
+    {
+      "path": "HTML/pine_auto_config.js",
+      "backupPath": "production_backup/pine_formal_switch_20260715T153653/HTML/pine_auto_config.js",
+      "sha256": "c7d2e8e3fb9bccb04a3be8fadfa5cd1c3e70b945febae434099ec0fa9a0a5cb3",
+      "size": 425,
+      "mtime": "2026-07-15T12:48:01+08:00",
+      "backupMatches": true
+    },
+    {
+      "path": "github_pages_repo/pine_auto_config.js",
+      "backupPath": "production_backup/pine_formal_switch_20260715T153653/github_pages_repo/pine_auto_config.js",
+      "sha256": "c7d2e8e3fb9bccb04a3be8fadfa5cd1c3e70b945febae434099ec0fa9a0a5cb3",
+      "size": 425,
+      "mtime": "2026-07-15T12:51:55+08:00",
+      "backupMatches": true
+    },
+    {
+      "path": "HTML/pine_score_resolver.js",
+      "backupPath": "production_backup/pine_formal_switch_20260715T153653/HTML/pine_score_resolver.js",
+      "sha256": "29c039e13662d174c9c85c0540bd4782d234cc14c7331aa26518dbfa438e43f4",
+      "size": 8370,
+      "mtime": "2026-07-15T12:48:01+08:00",
+      "backupMatches": true
+    },
+    {
+      "path": "github_pages_repo/pine_score_resolver.js",
+      "backupPath": "production_backup/pine_formal_switch_20260715T153653/github_pages_repo/pine_score_resolver.js",
+      "sha256": "29c039e13662d174c9c85c0540bd4782d234cc14c7331aa26518dbfa438e43f4",
+      "size": 8370,
+      "mtime": "2026-07-15T12:51:55+08:00",
+      "backupMatches": true
+    },
+    {
+      "path": "HTML/pine_auto_candidate.css",
+      "backupPath": "production_backup/pine_formal_switch_20260715T153653/HTML/pine_auto_candidate.css",
+      "sha256": "dc027e0e1a3f80ae4854f504fa1a677651bd114243abb3787191cceaa00fec83",
+      "size": 1351,
+      "mtime": "2026-07-15T08:53:52+08:00",
+      "backupMatches": true
+    },
+    {
+      "path": "github_pages_repo/pine_auto_candidate.css",
+      "backupPath": "production_backup/pine_formal_switch_20260715T153653/github_pages_repo/pine_auto_candidate.css",
+      "sha256": "dc027e0e1a3f80ae4854f504fa1a677651bd114243abb3787191cceaa00fec83",
+      "size": 1351,
+      "mtime": "2026-07-15T12:51:55+08:00",
+      "backupMatches": true
+    }
+  ]
+}
