@@ -81,6 +81,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 .header-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap;background:#fef3c7;color:#92400e}
 @media(min-width:480px){.kpi-grid{grid-template-columns:repeat(4,1fr)}}
 </style>
+<link rel="stylesheet" href="pine_auto_candidate.css">
 </head>
 <body>
 
@@ -129,14 +130,17 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 <div class="entry-field"><label>252日最低价</label><input type="number" id="e_price_252_low" placeholder="自动填充" step="0.001"></div>
 <div class="entry-field"><label>252日最高价</label><input type="number" id="e_price_252_high" placeholder="自动填充" step="0.001"></div>
 <div class="entry-field"><label>手动 fallback</label><select id="e_pp252_fallback" onchange="this.classList.add('sel')"><option value="">优先使用自动计算</option><option value="low">≤20%，低位，7分</option><option value="rel_low">20%~40%，偏低，5.25分</option><option value="neutral">40%~60%，中性，3.5分</option><option value="rel_high">60%~80%，偏高，1.5分</option><option value="hot">80%~100%，偏热，0分</option></select></div>
-<div style="grid-column:1/-1;margin-top:4px;padding:9px 12px;background:#faf5ff;border:.5px solid #e9d5ff;border-radius:10px">
-<div style="font-size:10.5px;font-weight:700;color:#7c3aed;margin-bottom:5px;letter-spacing:.3px">📐 三指标综合得分（来自 TradingView Pine 指标）</div>
-<div style="font-size:10px;color:#4b5563;margin-bottom:8px;line-height:1.5">运行「三指标V7」后，将面板中<b>综合得分</b>填入（已含状态分、转变加减分、共振与过热衰减）。</div>
-<div style="display:flex;align-items:center;gap:10px">
-<div style="font-size:10px;color:#6b7280;white-space:nowrap">三指标总分 (0-10)</div>
-<input type="number" id="e_tech3" min="0" max="10" step="1" placeholder="0~10" style="width:90px;padding:7px 10px;border:1px solid #e9d5ff;border-radius:8px;font-family:monospace;font-size:16px;font-weight:700;color:#7c3aed;background:#fff;outline:none">
+<section id="pine-auto-panel" class="pine-auto-panel" data-mode="manual" aria-live="polite">
+<div class="pine-auto-head"><div><div class="pine-auto-title">Pine V7 自动输入</div><div style="font-size:9px;color:#64748b;margin-top:2px">Resolver 优先级：Manual Override → Python Auto → Manual Input</div></div><span class="pine-auto-badge">Production · Auto</span></div>
+<div class="pine-auto-grid">
+<div class="pine-auto-cell"><div class="pine-auto-key">Pine 评分</div><div><strong id="pine-auto-score" class="pine-auto-score">--</strong> / 10</div></div>
+<div class="pine-auto-cell"><div class="pine-auto-key">来源 / 状态</div><div class="pine-auto-value"><span id="pine-auto-source">Manual Input</span> · <span id="pine-auto-mode">Manual</span></div></div>
+<div class="pine-auto-cell"><div class="pine-auto-key">日期</div><div class="pine-auto-value" id="pine-auto-date">--</div></div>
+<div class="pine-auto-cell"><div class="pine-auto-key">Engine</div><div class="pine-auto-value" id="pine-auto-engine">--</div></div>
 </div>
-</div>
+<div class="pine-auto-manual"><label for="e_tech3" style="font-size:10px;color:#475569">Manual Input (0-10)</label><input type="number" id="e_tech3" min="0" max="10" step="1" placeholder="0~10"><label style="font-size:10px;font-weight:700;color:#92400e"><input type="checkbox" id="pine-manual-override-enabled"> Manual Override</label><button type="button" id="pine-auto-retry" style="margin-left:auto;padding:5px 8px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;font-size:10px;cursor:pointer">重试</button></div>
+<div id="pine-auto-status" class="pine-auto-status">正在读取 Pine API…</div>
+</section>
 </div>
 <div class="btn-row">
 <button class="btn-fill" onclick="autoFill()">⚡ 自动填入今日数据</button>
@@ -683,7 +687,8 @@ sb('ma',maS,8);sp('ma',maS,8);sd('ma',maDesc);techTotal+=maS;
 var pp252S=pp252.score||0;
 sb('pp252',pp252S,7);sp('pp252',pp252S,7);sd('pp252',pp252.label+(pp252.fallbackUsed?' · 手动fallback':''));techTotal+=pp252S;
 // ====== 三指标综合得分（Pine指标总分直接录入）======
-var tech3=Math.min(10,Math.max(0,parseInt(gv('e_tech3'))||0));
+var pineResolution=resolvePineScore();
+var tech3=Math.min(10,Math.max(0,Number(pineResolution.score)||0));
 sb('tech3',tech3,10);sp('tech3',tech3,10);sd('tech3',tech3>=8?'强共振':tech3>=6?'偏多':tech3>=4?'中性':tech3>=2?'偏空':'弱势');techTotal+=tech3;
 var rsiS=isNaN(rsi)?0:(rsi<=20?10:rsi<=25?9:rsi<=30?8:rsi<=35?7:rsi<=40?6:rsi<=45?5:rsi<=50?4:rsi<=55?3:rsi<=60?2:0);
 sb('rsi',rsiS,10);sp('rsi',rsiS,10);sd('rsi',isNaN(rsi)?'未填入':rsi<=30?'超卖 底部区':rsi<=40?'偏低 关注':rsi<=50?'中性偏低':'高位');techTotal+=rsiS;
@@ -837,6 +842,7 @@ var cm=title.match(/\d{6}/);var code=cm?cm[0]:'';
 saveRecord({date:dateVal,code:code,title:title,total:total,valTotal:valTotal,techTotal:techTotal,level:level,
 price:isNaN(price)?null:price,did:isNaN(did)?null:did,cn10y:isNaN(cn10y)?null:cn10y,spread:isNaN(spread)?null:spread,
 _form:(function(){var f={};['e_price','e_did','e_cn10y','e_did_pct','e_pb_pct','e_roe','e_sma60','e_sma120','e_sma250','e_rsi','e_vol_ratio','e_price_position_252','e_price_252_low','e_price_252_high','e_pp252_fallback','e_tech3','e_vol_state'].forEach(function(id){f[id]=DISPLAY_NUMBER_INPUT_IDS.indexOf(id)>=0?storedInputValue(id):gv(id);});
+f.e_tech3=String(tech3);f.e_tech3_manual=storedInputValue('e_tech3');f.pine_resolution={source:pineResolution.source,mode:pineResolution.mode,date:pineResolution.date,engineVersion:pineResolution.engineVersion};
 return f;})()});
 showMsg('综合得分：<strong>'+formatDisplayNumber(total)+'/100</strong>（估值'+formatDisplayNumber(valTotal)+'+技术'+formatDisplayNumber(techTotal)+'）');}
 function loadHistory(){return[];}// legacy stub，实际用cloudLoad
@@ -1095,5 +1101,7 @@ window.addEventListener('message', function(e) {
 <div style="text-align:center;font-size:10px;color:#b0b7c3;margin-top:8px;margin-bottom:16px;padding:8px 16px">
 自动估值数据：理杏仁指数数据经本地SQLite生成的冻结快照 · 点位单位为指数点<br>隐含ROE为PB/PE-TTM估算值；仅供研究参考，不构成投资建议
 </div>
+<script src="pine_auto_config.js"></script>
+<script src="pine_score_resolver.js"></script>
 </body>
 </html>
