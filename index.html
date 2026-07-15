@@ -153,7 +153,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 <input type="date" id="backfill-date-div" style="flex:1;font-family:monospace;font-size:12px;padding:7px 10px;border:1px solid #bfdbfe;border-radius:8px;background:#fff;color:#374151;outline:none">
 <button id="backfill-button-div" onclick="fillHistoricalDate()" style="padding:8px 14px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">⏮ 回填该日</button>
 </div>
-<p style="font-size:10px;color:#6b7280;margin-top:6px;line-height:1.5">历史归档命中时返回真实值（含DID/PB历史值）；未归档日期DID/PB百分位需等系统积累后才准确。</p>
+<p style="font-size:10px;color:#6b7280;margin-top:6px;line-height:1.5">按所选交易日从历史数据库动态计算；来源显示为 Historical Calculation，不读取 latest 或 archive。</p>
 </div>
 <div class="calc-result" id="calcResult"><strong>📊 评分结果</strong><br><span id="calcText"></span></div>
 <p style="font-size:10px;color:var(--muted);margin-top:8px">💡 股债利差自动计算；截图发我可帮助识别技术面数据</p>
@@ -1163,5 +1163,6 @@ window.addEventListener('message', function(e) {
 </div>
 <script src="pine_auto_config.js"></script>
 <script src="pine_score_resolver.js"></script>
+<script src="history_backfill_shadow_adapter.js"></script>
 </body>
 </html>
