@@ -69,6 +69,9 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 .btn-calc{flex:2;min-width:0;padding:10px;background:#059669;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
 .btn-fill{flex:2;min-width:0;padding:10px;background:var(--purple);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:normal;overflow:hidden;text-overflow:ellipsis;overflow-wrap:anywhere;line-height:1.25}
 .btn-clear{flex:1;min-width:0;padding:10px;background:#f3f4f6;color:var(--muted);border:1px solid #e5e7eb;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn-calc:disabled,.btn-fill:disabled{cursor:not-allowed;opacity:.55}
+.index-switch-status{font-size:10px;line-height:1.5;margin-top:5px;overflow-wrap:anywhere}
+.index-switch-status[data-state="LOADING"]{color:#7c3aed}.index-switch-status[data-state="READY"]{color:#059669}.index-switch-status[data-state="ERROR"]{color:#dc2626;font-weight:600}
 .calc-result{display:none;margin-top:10px;padding:10px 12px;background:#f0fdf4;border:.5px solid #bbf7d0;border-radius:10px;font-size:11px;color:#065f46}
 .calc-result.show{display:block}
 .spread-box{background:#f9fafb;border-radius:8px;padding:8px;border:.5px solid var(--bd);text-align:center}
@@ -85,6 +88,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 <link rel="stylesheet" href="pine_auto_candidate.css">
 <script src="index_registry.js"></script>
 <script src="dashboard_v11_core.js"></script>
+<script src="index_switch_atomic.js"></script>
 </head>
 <body>
 
@@ -97,6 +101,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 <div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:8px">🔭 选择红利指数</div>
 <div id="index-selector-buttons" class="index-selector-buttons" style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;width:100%"></div>
 <div id="selected-index-label" style="font-size:10px;color:#9ca3af;margin-top:6px">正在加载指数配置…</div>
+<div id="index-switch-status" class="index-switch-status" data-state="IDLE" aria-live="polite">等待选择指数</div>
 </div>
 
 <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase">📈 估值面</div>
@@ -302,8 +307,9 @@ var API_BASE='https://dividend-dashboard-api.zq609256057.workers.dev';
 var API_KEY='history/dividend';
 var latestPricePosition252=null;
 // 云端存储辅助函数
-async function cloudLoad(){try{var r=await fetch(API_BASE+'/'+API_KEY);if(r.ok){var d=await r.json();return Array.isArray(d)?d:[];}return[];}catch(e){return[];}}
-async function cloudSave(records){try{await fetch(API_BASE+'/'+API_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(records)});}catch(e){console.warn('云端保存失败',e);}}
+var LOCAL_DRY_RUN=/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+async function cloudLoad(){if(LOCAL_DRY_RUN){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){return[];}}try{var r=await fetch(API_BASE+'/'+API_KEY);if(r.ok){var d=await r.json();return Array.isArray(d)?d:[];}return[];}catch(e){return[];}}
+async function cloudSave(records){if(LOCAL_DRY_RUN){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(records));}catch(e){}return;}try{await fetch(API_BASE+'/'+API_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(records)});}catch(e){console.warn('云端保存失败',e);}}
 function g(id){return document.getElementById(id);}
 function gv(id){var el=g(id);return el?el.value:'';}
 var DISPLAY_NUMBER_INPUT_IDS=['e_price','e_did','e_cn10y','e_did_pct','e_pb','e_pb_pct','e_pe_ttm','e_pe_ttm_pct','e_roe_actual','e_roe','e_spread','e_sma60','e_sma120','e_sma250','e_rsi','e_vol_ratio','e_price_position_252','e_price_252_low','e_price_252_high','e_tech3'];
@@ -460,43 +466,129 @@ function renderIndexSelector(){
     var button=document.createElement('button');
     button.type='button';button.id='btn-'+item.code;button.textContent=item.name+' '+item.code;
     button.style.cssText='padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid #e9d5ff;background:#fff;color:#7c3aed;white-space:nowrap';
-    button.addEventListener('click',function(){selectIndex(item.code,'');});wrap.appendChild(button);
+    button.addEventListener('click',function(){switchIndexAtomically(item.code,{reason:'selector'});});wrap.appendChild(button);
   });
 }
 function updateIndexTitle(config){var title=g('etf-title');if(title&&config)title.textContent=config.name+' · '+config.code;}
-function selectIndex(idxCode, etfCode) {
-  var config=getIndexConfig(idxCode);
-  if(!config){console.error('[Dividend V1.1] 指数配置不存在或未启用:',idxCode);showMsg('⚠️ 指数配置不存在或未启用：'+idxCode);return false;}
-  _selIndex = config.code;
-  _selEtf   = etfCode || '';
-  // 高亮按钮
+var INDEX_AUTO_FIELD_IDS=['e_price','e_did','e_cn10y','e_did_pct','e_pb','e_pb_pct','e_pe_ttm','e_pe_ttm_pct','e_roe_actual','e_roe','e_spread','e_sma60','e_sma120','e_sma250','e_rsi','e_vol_ratio','e_price_position_252','e_price_252_low','e_price_252_high'];
+var INDEX_MANUAL_FIELD_IDS=INDEX_AUTO_FIELD_IDS.filter(function(id){return !['e_pb','e_pe_ttm','e_pe_ttm_pct','e_roe_actual','e_spread'].includes(id);}).concat(['e_tech3']);
+var indexManualDrafts={};
+var indexSwitchState='IDLE';
+var indexDataIdentity=null;
+var indexSwitchController=null;
+
+function loadIndexDrafts(){try{var saved=JSON.parse(localStorage.getItem('div_index_manual_drafts_v1')||'{}');return saved&&typeof saved==='object'?saved:{};}catch(error){return{};}}
+function persistIndexDrafts(){try{localStorage.setItem('div_index_manual_drafts_v1',JSON.stringify(indexManualDrafts));}catch(error){}}
+function captureManualDraft(code){
+  if(!getIndexConfig(code))return;
+  var values={};
+  INDEX_MANUAL_FIELD_IDS.forEach(function(id){var el=g(id);if(el&&el.dataset.manualOverride==='true')values[id]=storedInputValue(id);});
+  ['e_pp252_fallback','e_vol_state'].forEach(function(id){var el=g(id);if(el&&el.dataset.manualOverride==='true')values[id]=el.value;});
+  var override=g('pine-manual-override-enabled');
+  indexManualDrafts[code]={values:values,pineOverride:!!(override&&override.checked)};
+  persistIndexDrafts();
+}
+function clearIndexFields(){
+  DISPLAY_NUMBER_INPUT_IDS.forEach(function(id){var el=g(id);if(el){el.value='';clearDisplayRaw(el);delete el.dataset.manualOverride;}});
+  ['e_pp252_fallback','e_vol_state'].forEach(function(id){var el=g(id);if(el){el.value='';el.classList.remove('sel');delete el.dataset.manualOverride;}});
+  var override=g('pine-manual-override-enabled');if(override)override.checked=false;
+  var macro=g('macro-status');if(macro)macro.textContent='当前指数宏观数据尚未加载';
+  latestPricePosition252=null;
+}
+function restoreManualDraft(code){
+  var draft=indexManualDrafts[code]||{values:{},pineOverride:false};
+  Object.keys(draft.values||{}).forEach(function(id){var el=g(id);if(!el)return;var value=draft.values[id];if(DISPLAY_NUMBER_INPUT_IDS.includes(id)){if(value!==''&&value!=null)setDisplayNumberValue(id,value);}else{el.value=value||'';el.classList.toggle('sel',!!value);}el.dataset.manualOverride='true';});
+  var override=g('pine-manual-override-enabled');if(override)override.checked=!!draft.pineOverride;
+}
+function resetScorePresentation(){
+  renderScoreDecomp();
+  var hero=g('hero-score');if(hero){hero.textContent='--';hero.style.color='#d97706';}
+  var heroBar=g('hero-bar');if(heroBar)heroBar.style.width='0%';
+  var badge=g('header-badge');if(badge){badge.textContent='数据加载中';badge.style.background='#ede9fe';badge.style.color='#5b21b6';}
+  var pill=g('hero-pill');if(pill){pill.style.background='#ede9fe';pill.style.color='#5b21b6';pill.innerHTML='<span class="verdict-dot" style="background:#7c3aed"></span>等待当前指数数据';}
+  [['kpi-price','--'],['kpi-did','--'],['kpi-bond','--'],['kpi-spread','--']].forEach(function(pair){var el=g(pair[0]);if(el)el.textContent=pair[1];});
+  var didSub=g('kpi-did-sub');if(didSub)didSub.textContent='百分位 --%';
+  var priceSub=g('kpi-price-sub');if(priceSub)priceSub.textContent='最新指数收盘点位';
+  var spreadSub=g('kpi-spread-sub');if(spreadSub)spreadSub.textContent='DID - CN10Y';
+  var ma=g('ma-tbody');if(ma)ma.innerHTML='<tr><td colspan="4" style="font-size:12px;color:var(--muted);padding:8px 6px">请先计算评分</td></tr>';
+  var pp=g('pp252-rows');if(pp)pp.innerHTML='<p style="font-size:12px;color:var(--muted)">请先计算评分</p>';
+  var indicators=g('indicator-rows');if(indicators)indicators.innerHTML='<p style="font-size:12px;color:var(--muted)">请先计算评分</p>';
+  var cr=g('calcResult');if(cr)cr.classList.remove('show');
+}
+function setIndexIdentity(code,etfCode){
+  var config=getIndexConfig(code);if(!config)throw new Error('指数配置不存在或未启用：'+code);
+  _selIndex=config.code;_selEtf=etfCode||'';
   INDEX_REGISTRY.forEach(function(item){
     var b = g('btn-'+item.code);
     if(b) { b.style.background = item.code === config.code ? '#7c3aed' : '#fff'; b.style.color = item.code === config.code ? '#fff' : '#7c3aed'; }
   });
-  var lbl = g('selected-index-label');
-  if(lbl) lbl.textContent = '当前：' + config.name+' '+config.code + (etfCode ? '（ETF ' + etfCode + '）' : '（指数点位）');
   updateIndexTitle(config);
-  // 保存到 localStorage（历史记忆）
-  try { localStorage.setItem('div_sel_index', config.code); localStorage.setItem('div_sel_etf', etfCode || ''); } catch(e){}
-  return true;
+  try { localStorage.setItem('div_sel_index',config.code);localStorage.setItem('div_sel_etf',etfCode||''); } catch(error){}
+  if(window.PineScoreResolver&&typeof window.PineScoreResolver.render==='function')window.PineScoreResolver.render();
+}
+function renderIndexSwitchState(state,context){
+  indexSwitchState=state;
+  var config=getIndexConfig(context.code||_selIndex)||{};
+  var status=g('index-switch-status'),label=g('selected-index-label'),calc=g('index-selector-buttons')&&document.querySelector('.btn-calc'),fill=document.querySelector('.btn-fill');
+  if(status){status.dataset.state=state;status.textContent=state==='LOADING'?'正在加载 '+(context.code||'')+' 数据……':state==='READY'?'已加载 '+(context.code||'')+'，数据身份校验通过':state==='ERROR'?'当前指数 '+(context.code||'')+' 数据加载失败：'+((context.error&&context.error.message)||'未知错误')+'；可使用本指数人工输入/Override':'等待选择指数';}
+  if(label)label.textContent=state==='LOADING'?'正在加载 '+config.name+' '+config.code+' 数据……':'当前：'+config.name+' '+config.code+(_selEtf?'（ETF '+_selEtf+'）':'（指数点位）');
+  if(calc)calc.disabled=state==='LOADING';
+  if(fill){fill.disabled=state==='LOADING';fill.textContent=state==='LOADING'?'⏳ 正在加载 '+(context.code||''):'⚡ 自动填入今日数据';}
+  var badge=g('header-badge'),pill=g('hero-pill');
+  if(state==='READY'&&g('hero-score')&&g('hero-score').textContent==='--'){
+    if(badge){badge.textContent='数据就绪 · 待计算';badge.style.background='#d1fae5';badge.style.color='#065f46';}
+    if(pill){pill.style.background='#d1fae5';pill.style.color='#065f46';pill.innerHTML='<span class="verdict-dot" style="background:#059669"></span>当前指数数据已就绪，请计算评分';}
+  }
+  if(state==='ERROR'){
+    if(badge){badge.textContent='数据不可用';badge.style.background='#fee2e2';badge.style.color='#991b1b';}
+    if(pill){pill.style.background='#fee2e2';pill.style.color='#991b1b';pill.innerHTML='<span class="verdict-dot" style="background:#dc2626"></span>自动数据不可用，可使用当前指数人工输入';}
+  }
+  if(state==='ERROR')showMsg('⚠️ 当前指数 <strong>'+context.code+'</strong> 最新数据不可用：'+((context.error&&context.error.message)||'未知错误')+'。旧指数数据已清除；可为当前指数填写人工数据，Pine状态以Resolver显示为准。');
+}
+function loadLatestIndexData(code,context){
+  var timer;
+  return new Promise(function(resolve,reject){
+    timer=setTimeout(function(){var error=new Error('快照读取超时');error.name='TimeoutError';reject(error);},15000);
+    fetch(DATA_API_DIV+'/latest',{cache:'no-store',signal:context.signal}).then(function(response){if(!response.ok)throw new Error('HTTP '+response.status);return response.json();}).then(function(snapshot){resolve(mapSnapshotIndexToFormData(snapshot,code));}).catch(reject).finally(function(){clearTimeout(timer);});
+  });
+}
+function ensureIndexSwitchController(){
+  if(indexSwitchController)return indexSwitchController;
+  if(!window.DividendIndexSwitchAtomic)throw new Error('原子切换模块未加载');
+  indexSwitchController=window.DividendIndexSwitchAtomic.create({
+    isAllowed:function(code){return!!getIndexConfig(code);},
+    begin:function(code,context){captureManualDraft(_selIndex);setIndexIdentity(code,context.meta.etfCode||'');clearIndexFields();restoreManualDraft(code);if(window.PineScoreResolver&&typeof window.PineScoreResolver.render==='function')window.PineScoreResolver.render();resetScorePresentation();indexDataIdentity=null;},
+    load:loadLatestIndexData,
+    matches:function(data,code){return!!data&&data.index===code;},
+    commit:function(data,code,context){if(context.meta.providedCommit){context.meta.providedCommit();}else{applyDivData(data,{atomic:true,force:!!context.meta.force,historical:!!context.meta.historical});loadDataFreshnessStatus();}indexDataIdentity=code;},
+    fail:function(error,code){indexDataIdentity=null;console.error('[Dividend index atomic switch]',{code:code,kind:error.name||'LOAD_FAILED',error:error});},
+    onState:renderIndexSwitchState
+  });
+  return indexSwitchController;
+}
+function switchIndexAtomically(nextCode,options){
+  options=options||{};
+  if(!getIndexConfig(nextCode)){var error=new Error('指数配置不存在或未启用：'+nextCode);console.error('[Dividend index atomic switch]',error);showMsg('⚠️ '+error.message);return Promise.resolve({ok:false,stale:false,error:error});}
+  var meta=Object.assign({},options);
+  if(typeof options.providedCommit==='function')meta.providedData={index:nextCode,provided:true};
+  return ensureIndexSwitchController().switchIndex(nextCode,meta);
+}
+function selectIndex(idxCode,etfCode){return switchIndexAtomically(idxCode,{etfCode:etfCode||'',reason:'compatibility'});}
+
+indexManualDrafts=loadIndexDrafts();
+
+// 初始化：恢复上次选择并自动加载当前指数。
+renderIndexSelector();
+if(!INDEX_REGISTRY.length){console.error('[Dividend V1.1] index_registry.js 没有启用的指数');var emptyLabel=g('selected-index-label');if(emptyLabel)emptyLabel.textContent='指数配置加载失败';}
+else{
+  var initialCode='';
+  try{initialCode=localStorage.getItem('div_sel_index')||'';}catch(error){}
+  if(!getIndexConfig(initialCode))initialCode=getIndexConfig(_selIndex)?_selIndex:INDEX_REGISTRY[0].code;
+  switchIndexAtomically(initialCode,{reason:'initial'});
 }
 
-// 初始化：恢复上次选择
-(function(){
-  renderIndexSelector();
-  if(!INDEX_REGISTRY.length){console.error('[Dividend V1.1] index_registry.js 没有启用的指数');var lbl=g('selected-index-label');if(lbl)lbl.textContent='指数配置加载失败';return;}
-  try {
-    var si = localStorage.getItem('div_sel_index');
-    if(getIndexConfig(si)){ selectIndex(si, ''); }
-    else { selectIndex(getIndexConfig(_selIndex)?_selIndex:INDEX_REGISTRY[0].code,''); }
-  } catch(e){ selectIndex(getIndexConfig(_selIndex)?_selIndex:INDEX_REGISTRY[0].code,''); }
-})();
-
-// 自动填入今日数据
-function autoFill(){
-  fetchAndFillDiv(null, document.querySelector('.btn-fill'));
-}
+// 自动填入按钮保留为当前指数的显式重试/强制刷新入口。
+function autoFill(){return switchIndexAtomically(_selIndex,{reason:'manual-retry'});}
 
 function localToday(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function historicalError(kind,message){var error=new Error(message);error.kind=kind;return error;}
@@ -537,7 +629,7 @@ async function fillHistoricalDate(){
   if(isNaN(parsed.getTime())||date>localToday()||parsed.getDay()===0||parsed.getDay()===6){console.error('[Dividend V1.1 historical fill]',{date:date,index:_selIndex,kind:'DATE_UNAVAILABLE'});showMsg('⚠️ 日期不可用：'+date+' 不是可回填的历史交易日');return;}
   var original=button?button.textContent:'';if(button){button.textContent='⏳ 回填中...';button.disabled=true;}showMsg('⏳ 正在加载 '+date+' 的历史数据…');
   try{
-    var data=await loadHistoricalData(date);clearHistoricalAutoFields();applyDivData(data,{force:true,historical:true});
+    var data=await loadHistoricalData(date);var switched=await switchIndexAtomically(_selIndex,{reason:'historical-fill',providedData:data,force:true,historical:true});if(!switched.ok)throw switched.error||new Error('历史数据原子提交失败');
     if(g('header-date'))g('header-date').value=date;
     showMsg('✅ 已回填 <strong>'+date+'</strong> · '+(getIndexConfig(_selIndex)||{}).name+' '+_selIndex+'。所有可用指标已更新，请点击「计算评分」。');
   }catch(error){console.error('[Dividend V1.1 historical fill]',{date:date,index:_selIndex,kind:error.kind||'API_FAILED',error:error});showMsg('⚠️ 回填失败：'+(error.message||'API失败'));}
@@ -547,34 +639,8 @@ function autoFillHistoryDiv(){return fillHistoricalDate();}
 
 // 统一抓取函数
 function fetchAndFillDiv(date, btn){
-  var origText = btn ? btn.textContent : '';
-  if(btn){btn.textContent='⏳ 抓取中...';btn.disabled=true;}
-  var label = date ? '历史数据（'+date+'）' : '最新数据（'+_selIndex+'）';
-  showMsg('⏳ 正在抓取 '+label+'，请稍候…');
-
-  if(date){if(btn){btn.textContent=origText;btn.disabled=false;}return fillHistoricalDate();}
-  var url = DATA_API_DIV + '/latest';
-
-  var timeout = setTimeout(function(){
-    if(btn){btn.textContent=origText;btn.disabled=false;}
-    showMsg('⚠️ 快照读取超时，未写入任何替代值');
-  }, 15000);
-
-  fetch(url)
-    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-    .then(function(d){
-      clearTimeout(timeout);
-      if(btn){btn.textContent=origText;btn.disabled=false;}
-      applyDivData(mapSnapshotIndexToFormData(d, _selIndex));
-      loadDataFreshnessStatus();
-      if(date && g('header-date')) g('header-date').value = date;
-    })
-    .catch(function(err){
-      clearTimeout(timeout);
-      if(btn){btn.textContent=origText;btn.disabled=false;}
-      if(date) showMsg('⚠️ 历史数据抓取失败（'+err.message+'），请手动填写');
-      else showMsg('⚠️ 快照读取失败（'+err.message+'），未写入任何替代值');
-    });
+  if(date)return fillHistoricalDate();
+  return switchIndexAtomically(_selIndex,{reason:'fetch-and-fill-compatibility'});
 }
 
 // 冻结快照嵌套结构 → 页面显示字段。百分位保持0~100；仅decimal股息率/ROE转为页面百分数。
@@ -611,6 +677,7 @@ function mapSnapshotIndexToFormData(snapshot, code){
 // 将 Worker 返回数据填入表单
 function applyDivData(d,options){
   options=options||{};
+  if(!d||d.index!==_selIndex)throw new Error('数据身份不匹配：expected '+_selIndex+' got '+(d&&d.index));
   var filled = [], missing = [];
   var isArchived = d&&d._mode === 'archived';
   var isHist     = !!options.historical || isArchived || (d&&d._mode === 'historical');
@@ -725,6 +792,8 @@ function maTrendHistory(code,targetDate){
 }
 
 function calcScore(){
+if(indexSwitchState==='LOADING'){showMsg('⏳ 正在加载 '+_selIndex+' 数据，旧指数评分已失效，加载完成前不可计算。');return;}
+if(indexDataIdentity&&indexDataIdentity!==_selIndex){resetScorePresentation();showMsg('⚠️ 数据身份校验失败，当前指数不可计算。');return;}
 var price=numericInputValue('e_price'),did=numericInputValue('e_did'),cn10y=numericInputValue('e_cn10y');
 var didPct=numericInputValue('e_did_pct'),pbPct=numericInputValue('e_pb_pct'),roe=numericInputValue('e_roe');
 var sma60=numericInputValue('e_sma60'),sma120=numericInputValue('e_sma120'),sma250=numericInputValue('e_sma250');
@@ -1004,13 +1073,13 @@ function loadRecord(idx){
 cloudLoad().then(function(records){
 if(idx<0||idx>=records.length)return;
 var r=records[idx];if(!r._form){showMsg('⚠️ 旧版记录无法回放');return;}
-var f=r._form;Object.keys(f).forEach(function(id){var el=g(id);if(!el)return;if(DISPLAY_NUMBER_INPUT_IDS.indexOf(id)>=0){el.value='';clearDisplayRaw(el);if(f[id]!==''&&f[id]!=null)setDisplayNumberValue(id,f[id]);}else{el.value=f[id]||'';clearDisplayRaw(el);}});
-['e_pp252_fallback','e_vol_state'].forEach(function(id){var el=g(id);if(el&&f[id])el.classList.add('sel');});
-var hd=g('header-date');if(hd)hd.value=r.date;
-if(r.code&&getIndexConfig(r.code))selectIndex(r.code,'');
-updateSpread();calcScore();
-var ec=document.querySelector('.card');if(ec)ec.scrollIntoView({behavior:'smooth',block:'start'});
-showMsg('🔄 已回放 <strong>'+r.date+'</strong>（'+(r.code||'')+'）评分 '+formatDisplayNumber(r.total)+'/100');});}
+var replayCode=r.code&&getIndexConfig(r.code)?r.code:_selIndex;
+switchIndexAtomically(replayCode,{reason:'history-replay',providedCommit:function(){
+  var f=r._form;Object.keys(f).forEach(function(id){var el=g(id);if(!el)return;if(DISPLAY_NUMBER_INPUT_IDS.indexOf(id)>=0){el.value='';clearDisplayRaw(el);if(f[id]!==''&&f[id]!=null)setDisplayNumberValue(id,f[id]);}else{el.value=f[id]||'';clearDisplayRaw(el);}});
+  ['e_pp252_fallback','e_vol_state'].forEach(function(id){var el=g(id);if(el&&f[id])el.classList.add('sel');});
+  var hd=g('header-date');if(hd)hd.value=r.date;
+  updateSpread();
+}}).then(function(result){if(!result.ok)return;calcScore();var ec=document.querySelector('.card');if(ec)ec.scrollIntoView({behavior:'smooth',block:'start'});showMsg('🔄 已回放 <strong>'+r.date+'</strong>（'+replayCode+'）评分 '+formatDisplayNumber(r.total)+'/100');});});}
 function deleteRecord(idx){
 cloudLoad().then(function(records){
 if(idx<0||idx>=records.length)return;
@@ -1118,28 +1187,19 @@ window.addEventListener('message', function(e) {
   var d = e.data;
   if (!d || d.type !== 'ETF_AUTOFILL') return;
   var m = d.data;
-  function setField(id, val) {
-    if (val !== '' && val != null) setDisplayNumberValue(id, val);
-  }
-  setField('e_price',   m.price);
-  setField('e_sma60',   m.sma60);
-  setField('e_sma120',  m.sma120);
-  setField('e_sma250',  m.sma250);
-  setField('e_rsi',     m.rsi);
-  setField('e_vol_ratio', m.volRatio);
-  setField('e_did',     m.did);
-  setField('e_did_pct', m.didPct);
-  setField('e_cn10y',   m.cn10y);
-  setField('e_pb_pct',  m.pbPct);
-  setField('e_roe',     m.roe);
-  setField('e_price_position_252', m.price_position_252 != null ? m.price_position_252 : m.pricePosition252);
-  setField('e_price_252_low', m.price_252_low != null ? m.price_252_low : m.price252Low);
-  setField('e_price_252_high', m.price_252_high != null ? m.price_252_high : m.price252High);
-  latestPricePosition252={value:m.price_position_252??m.pricePosition252??null,low:m.price_252_low??m.price252Low??null,high:m.price_252_high??m.price252High??null,estimated:!!(m.price_position_252_estimated??m.pricePosition252Estimated)};
-  // 更新标题代码
-  if (m.code && getIndexConfig(m.code)) selectIndex(m.code,'');
-  updateSpread();
-  showMsg('✅ 数据助手已自动填入 ' + (m.code||'') + ' 的数据，请补充技术指标后计算评分', 'show');
+  var messageCode=m.code&&getIndexConfig(m.code)?m.code:_selIndex;
+  switchIndexAtomically(messageCode,{reason:'data-assistant',providedCommit:function(){
+    function setField(id,val){if(val!==''&&val!=null)setDisplayNumberValue(id,val);}
+    setField('e_price',m.price);setField('e_sma60',m.sma60);setField('e_sma120',m.sma120);setField('e_sma250',m.sma250);
+    setField('e_rsi',m.rsi);setField('e_vol_ratio',m.volRatio);setField('e_did',m.did);setField('e_did_pct',m.didPct);
+    setField('e_cn10y',m.cn10y);setField('e_pb_pct',m.pbPct);setField('e_roe',m.roe);
+    setField('e_price_position_252',m.price_position_252!=null?m.price_position_252:m.pricePosition252);
+    setField('e_price_252_low',m.price_252_low!=null?m.price_252_low:m.price252Low);
+    setField('e_price_252_high',m.price_252_high!=null?m.price_252_high:m.price252High);
+    latestPricePosition252={value:m.price_position_252??m.pricePosition252??null,low:m.price_252_low??m.price252Low??null,high:m.price_252_high??m.price252High??null,estimated:!!(m.price_position_252_estimated??m.pricePosition252Estimated)};
+    updateSpread();
+    showMsg('✅ 数据助手已自动填入 '+messageCode+' 的数据，请补充技术指标后计算评分');
+  }});
 });
 // 页面加载时检查localStorage是否有待填数据
 (function checkAutofill(){

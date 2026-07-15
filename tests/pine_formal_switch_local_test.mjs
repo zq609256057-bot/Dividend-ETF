@@ -40,9 +40,17 @@ for (const marker of [
 ]) assert.ok(resolver.includes(marker), `missing Resolver gate: ${marker}`);
 
 for (const item of manifest.files) {
-  const source = fs.readFileSync(new URL(item.path.replace('github_pages_repo/', ''), item.path.startsWith('github_pages_repo/') ? repo : workspace));
-  assert.equal(crypto.createHash('sha256').update(source).digest('hex'), item.sha256, `source changed after backup: ${item.path}`);
+  const backup = fs.readFileSync(new URL(item.backupPath, workspace));
+  assert.equal(crypto.createHash('sha256').update(backup).digest('hex'), item.sha256, `formal backup changed: ${item.backupPath}`);
+  assert.equal(backup.byteLength, item.size, `formal backup size changed: ${item.backupPath}`);
   assert.equal(item.backupMatches, true);
+  if(!item.path.endsWith('index.html')){
+    const source = fs.readFileSync(new URL(item.path.replace('github_pages_repo/', ''), item.path.startsWith('github_pages_repo/') ? repo : workspace));
+    assert.equal(crypto.createHash('sha256').update(source).digest('hex'), item.sha256, `frozen Pine asset changed: ${item.path}`);
+  }
 }
 
-console.log('Pine formal switch: production HTML, flag, Resolver gates, scoring formula, refresh, history and backup integrity PASS');
+assert.match(repoHtml, /switchIndexAtomically\(item\.code/);
+assert.match(repoHtml, /indexDataIdentity/);
+
+console.log('Pine formal switch: production HTML, flag, Resolver gates, scoring formula, refresh, frozen Pine assets and backup integrity PASS');

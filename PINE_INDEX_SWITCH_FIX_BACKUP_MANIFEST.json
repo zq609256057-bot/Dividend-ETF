@@ -1,0 +1,81 @@
+{
+  "manifestVersion": 1,
+  "createdAt": "2026-07-15T21:52:22+08:00",
+  "productionCommit": "2196dbc3b69a5f9ab72a066b47b3562c949149ed",
+  "backupRoot": "production_backup/pine_index_switch_fix_20260715T215222",
+  "files": [
+    {
+      "source": "HTML/index.html",
+      "backup": "production_backup/pine_index_switch_fix_20260715T215222/HTML/index.html",
+      "restoreTo": "HTML/index.html",
+      "sha256": "644e0c2c2e561c3b6e6c6f3dd77258994c3d99bd0b172b50977d16dac904dd47",
+      "size": 96061,
+      "mtime": "2026-07-15T14:23:01+0800"
+    },
+    {
+      "source": "HTML/index_registry.js",
+      "backup": "production_backup/pine_index_switch_fix_20260715T215222/HTML/index_registry.js",
+      "restoreTo": "HTML/index_registry.js",
+      "sha256": "989145d343f5f9b24e33880c0686830eb8a019f20f96c0441cc407f2a0df8b5b",
+      "size": 527,
+      "mtime": "2026-07-15T13:19:55+0800"
+    },
+    {
+      "source": "HTML/pine_auto_config.js",
+      "backup": "production_backup/pine_index_switch_fix_20260715T215222/HTML/pine_auto_config.js",
+      "restoreTo": "HTML/pine_auto_config.js",
+      "sha256": "c7d2e8e3fb9bccb04a3be8fadfa5cd1c3e70b945febae434099ec0fa9a0a5cb3",
+      "size": 425,
+      "mtime": "2026-07-15T12:48:01+0800"
+    },
+    {
+      "source": "HTML/pine_score_resolver.js",
+      "backup": "production_backup/pine_index_switch_fix_20260715T215222/HTML/pine_score_resolver.js",
+      "restoreTo": "HTML/pine_score_resolver.js",
+      "sha256": "29c039e13662d174c9c85c0540bd4782d234cc14c7331aa26518dbfa438e43f4",
+      "size": 8370,
+      "mtime": "2026-07-15T12:48:01+0800"
+    },
+    {
+      "source": "github_pages_repo/index.html",
+      "backup": "production_backup/pine_index_switch_fix_20260715T215222/github_pages_repo/index.html",
+      "restoreTo": "github_pages_repo/index.html",
+      "sha256": "644e0c2c2e561c3b6e6c6f3dd77258994c3d99bd0b172b50977d16dac904dd47",
+      "size": 96061,
+      "mtime": "2026-07-15T14:23:16+0800"
+    },
+    {
+      "source": "github_pages_repo/index_registry.js",
+      "backup": "production_backup/pine_index_switch_fix_20260715T215222/github_pages_repo/index_registry.js",
+      "restoreTo": "github_pages_repo/index_registry.js",
+      "sha256": "989145d343f5f9b24e33880c0686830eb8a019f20f96c0441cc407f2a0df8b5b",
+      "size": 527,
+      "mtime": "2026-07-15T13:19:55+0800"
+    },
+    {
+      "source": "github_pages_repo/pine_auto_config.js",
+      "backup": "production_backup/pine_index_switch_fix_20260715T215222/github_pages_repo/pine_auto_config.js",
+      "restoreTo": "github_pages_repo/pine_auto_config.js",
+      "sha256": "c7d2e8e3fb9bccb04a3be8fadfa5cd1c3e70b945febae434099ec0fa9a0a5cb3",
+      "size": 425,
+      "mtime": "2026-07-15T12:51:55+0800"
+    },
+    {
+      "source": "github_pages_repo/pine_score_resolver.js",
+      "backup": "production_backup/pine_index_switch_fix_20260715T215222/github_pages_repo/pine_score_resolver.js",
+      "restoreTo": "github_pages_repo/pine_score_resolver.js",
+      "sha256": "29c039e13662d174c9c85c0540bd4782d234cc14c7331aa26518dbfa438e43f4",
+      "size": 8370,
+      "mtime": "2026-07-15T12:51:55+0800"
+    },
+    {
+      "source": "github_pages_repo/tests/pine_formal_switch_local_test.mjs",
+      "backup": "production_backup/pine_index_switch_fix_20260715T215222/github_pages_repo/tests/pine_formal_switch_local_test.mjs",
+      "restoreTo": "github_pages_repo/tests/pine_formal_switch_local_test.mjs",
+      "sha256": "49a20da31c192345ff1a2a59f8d17393eb34eb93ce85f7045f64535c3f78dbc7",
+      "size": 3013,
+      "mtime": "2026-07-15T15:40:54+0800"
+    }
+  ],
+  "kvWrites": 0
+}
