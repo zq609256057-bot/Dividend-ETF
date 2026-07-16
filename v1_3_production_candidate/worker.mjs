@@ -202,7 +202,9 @@ async function handleSnapshotUpload(request, env) {
   const configured = env?.SNAPSHOT_ADMIN_TOKEN;
   if (!configured || request.headers.get('Authorization') !== `Bearer ${configured}`) return json(401, {error: 'Unauthorized'});
   if (request.headers.get('X-KV-Allow-Write') !== 'true') return json(403, {error: 'KV_WRITE_AUTHORIZATION_REQUIRED'});
-  const putsUsedToday = Number(request.headers.get('X-KV-Puts-Used-Today'));
+  const quotaHeader = request.headers.get('X-KV-Puts-Used-Today');
+  if (quotaHeader == null || quotaHeader.trim() === '') return json(400, {error: 'kv_quota_usage_unknown'});
+  const putsUsedToday = Number(quotaHeader);
   if (!Number.isInteger(putsUsedToday) || putsUsedToday < 0) return json(400, {error: 'kv_quota_usage_unknown'});
   const projectedPuts = putsUsedToday + 4;
   if (projectedPuts >= KV_PUT_BLOCK_THRESHOLD) return json(429, {error: 'KV_QUOTA_GUARD_BLOCKED', putsUsedToday, projectedPuts});

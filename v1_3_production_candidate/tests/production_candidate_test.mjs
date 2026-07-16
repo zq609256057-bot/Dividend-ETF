@@ -94,6 +94,9 @@ function uploadRequest(headers = {}, payload = snapshot) {
 }
 const noApproval = await worker.fetch(uploadRequest({'X-KV-Allow-Write': 'false'}), env);
 assert.equal(noApproval.status, 403);
+const unknownQuota = await worker.fetch(uploadRequest({'X-KV-Puts-Used-Today': ''}), env);
+assert.equal(unknownQuota.status, 400);
+assert.equal((await unknownQuota.json()).error, 'kv_quota_usage_unknown');
 const quota = await worker.fetch(uploadRequest({'X-KV-Puts-Used-Today': '946'}), env);
 assert.equal(quota.status, 429);
 const duplicateEnv = {...env, DIVIDEND_SNAPSHOTS: {...env.DIVIDEND_SNAPSHOTS, get: async (key, options) => {
