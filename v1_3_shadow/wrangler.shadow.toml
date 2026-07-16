@@ -1,0 +1,20 @@
+name = "dividend-dashboard-api-v1-3-shadow"
+main = "worker.mjs"
+compatibility_date = "2026-07-15"
+workers_dev = true
+
+# Zero-KV Shadow deployment. Latest data is bundled read-only; history is a
+# read-only GET to the existing calculation API. Never reuse the V1.2 Worker.
+[vars]
+HISTORY_ENGINE_URL = "https://dividend-dashboard-api.zq609256057.workers.dev"
+
+# Read-only GET service binding. This does not deploy or modify the production
+# Worker and avoids same-account workers.dev loop restrictions.
+[[services]]
+binding = "HISTORY_ENGINE"
+service = "dividend-dashboard-api"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true

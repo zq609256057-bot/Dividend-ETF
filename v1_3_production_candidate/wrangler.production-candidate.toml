@@ -1,0 +1,21 @@
+name = "dividend-dashboard-api-v1-3-production-candidate"
+main = "worker.mjs"
+compatibility_date = "2026-07-16"
+workers_dev = true
+
+[vars]
+DEPLOYMENT_ENVIRONMENT = "candidate"
+
+# Candidate only. The release renderer must replace this placeholder with the
+# existing Production namespace ID after explicit approval. Never commit a
+# token or SNAPSHOT_ADMIN_TOKEN value here.
+[[kv_namespaces]]
+binding = "DIVIDEND_SNAPSHOTS"
+id = "__PRODUCTION_KV_NAMESPACE_ID__"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
+# No route, Cron, service binding, plaintext Secret, or temporary Shadow binding.

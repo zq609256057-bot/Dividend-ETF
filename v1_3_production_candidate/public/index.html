@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>红利ETF看板 · V1.3 Production</title>
+<title>红利ETF看板 · V1.3 Production Candidate</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 img,video,svg,canvas{max-width:100%}
@@ -306,11 +306,11 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 
 <script>
 var STORAGE_KEY='dividend_etf_history';
-var API_KEY='v1_3_production_history';
+var API_KEY='v1_3_production_candidate_history';
 var latestPricePosition252=null;
-// Production 始终使用浏览器本地历史，不写 Production KV。
+// Production Candidate 始终使用浏览器本地历史，不写 Production KV。
 async function cloudLoad(){try{var d=JSON.parse(localStorage.getItem(API_KEY)||'[]');return Array.isArray(d)?d:[];}catch(e){return[];}}
-async function cloudSave(records){try{localStorage.setItem(API_KEY,JSON.stringify(records));}catch(e){console.warn('Production本地历史保存失败',e);}}
+async function cloudSave(records){try{localStorage.setItem(API_KEY,JSON.stringify(records));}catch(e){console.warn('Candidate本地历史保存失败',e);}}
 function g(id){return document.getElementById(id);}
 function gv(id){var el=g(id);return el?el.value:'';}
 var DISPLAY_NUMBER_INPUT_IDS=['e_price','e_did','e_cn10y','e_did_pct','e_pb','e_pb_pct','e_pe_ttm','e_pe_ttm_pct','e_roe_actual','e_roe','e_spread','e_sma60','e_sma120','e_sma250','e_rsi','e_vol_ratio','e_price_position_252','e_price_252_low','e_price_252_high','e_tech3'];
@@ -413,8 +413,8 @@ var INDEX_REGISTRY=[];
 var _selIndex = '';
 var _selEtf   = '';
 var LOCAL_SNAPSHOT_API = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? new URLSearchParams(location.search).get('snapshot_api') : null;
-var DEPLOYMENT_PRODUCTION_URL = 'https://dividend-dashboard-api.zq609256057.workers.dev';
-var DATA_API_DIV = window.DIVIDEND_SNAPSHOT_API || LOCAL_SNAPSHOT_API || DEPLOYMENT_PRODUCTION_URL;
+var DEPLOYMENT_CANDIDATE_URL = location.origin;
+var DATA_API_DIV = window.DIVIDEND_SNAPSHOT_API || LOCAL_SNAPSHOT_API || DEPLOYMENT_CANDIDATE_URL;
 
 function formatBeijingDateTime(value){
   if(!value)return'--';
@@ -1230,9 +1230,9 @@ window.addEventListener('message', function(e) {
 自动估值数据：理杏仁指数数据经本地SQLite生成的冻结快照 · 点位单位为指数点<br>隐含ROE为PB/PE-TTM估算值；仅供研究参考，不构成投资建议
 </div>
 <script>
-window.PINE_AUTO_CONFIG=Object.freeze({PINE_AUTO_ENABLED:true,apiUrl:DEPLOYMENT_PRODUCTION_URL+'/api/shadow/pine/latest',schemaVersion:'pine_v7_shadow_v1',engineVersion:'pine-v7-red-rocket-final',allowedProductionScoreEffects:Object.freeze(['none']),tradeSemantics:'none',maxAgeCalendarDays:7,timeoutMs:5000});
+window.PINE_AUTO_CONFIG=Object.freeze({PINE_AUTO_ENABLED:true,apiUrl:location.origin+'/api/shadow/pine/latest',schemaVersion:'pine_v7_shadow_v1',engineVersion:'pine-v7-red-rocket-final',allowedProductionScoreEffects:Object.freeze(['none']),tradeSemantics:'none',maxAgeCalendarDays:7,timeoutMs:5000});
 </script>
 <script src="https://zq609256057-bot.github.io/Dividend-ETF/pine_score_resolver.js"></script>
-<script src="history_backfill_production_adapter.js"></script>
+<script src="history_backfill_candidate_adapter.js"></script>
 </body>
 </html>
