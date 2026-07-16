@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>红利ETF看板 · V1.3 Production</title>
+<title>红利ETF看板 · V1.3 Shadow</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 img,video,svg,canvas{max-width:100%}
@@ -306,11 +306,11 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 
 <script>
 var STORAGE_KEY='dividend_etf_history';
-var API_KEY='v1_3_production_history';
+var API_KEY='v1_3_shadow_history';
 var latestPricePosition252=null;
-// Production 始终使用浏览器本地历史，不写 Production KV。
+// Shadow HTML 始终使用浏览器本地历史，不写 Production KV。
 async function cloudLoad(){try{var d=JSON.parse(localStorage.getItem(API_KEY)||'[]');return Array.isArray(d)?d:[];}catch(e){return[];}}
-async function cloudSave(records){try{localStorage.setItem(API_KEY,JSON.stringify(records));}catch(e){console.warn('Production本地历史保存失败',e);}}
+async function cloudSave(records){try{localStorage.setItem(API_KEY,JSON.stringify(records));}catch(e){console.warn('Shadow本地历史保存失败',e);}}
 function g(id){return document.getElementById(id);}
 function gv(id){var el=g(id);return el?el.value:'';}
 var DISPLAY_NUMBER_INPUT_IDS=['e_price','e_did','e_cn10y','e_did_pct','e_pb','e_pb_pct','e_pe_ttm','e_pe_ttm_pct','e_roe_actual','e_roe','e_spread','e_sma60','e_sma120','e_sma250','e_rsi','e_vol_ratio','e_price_position_252','e_price_252_low','e_price_252_high','e_tech3'];
@@ -413,8 +413,8 @@ var INDEX_REGISTRY=[];
 var _selIndex = '';
 var _selEtf   = '';
 var LOCAL_SNAPSHOT_API = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? new URLSearchParams(location.search).get('snapshot_api') : null;
-var DEPLOYMENT_PRODUCTION_URL = 'https://dividend-dashboard-api.zq609256057.workers.dev';
-var DATA_API_DIV = window.DIVIDEND_SNAPSHOT_API || LOCAL_SNAPSHOT_API || DEPLOYMENT_PRODUCTION_URL;
+var DEPLOYMENT_CANDIDATE_URL = location.origin;
+var DATA_API_DIV = window.DIVIDEND_SNAPSHOT_API || LOCAL_SNAPSHOT_API || DEPLOYMENT_CANDIDATE_URL;
 
 function formatBeijingDateTime(value){
   if(!value)return'--';
@@ -450,11 +450,11 @@ function renderDataFreshnessStatus(snapshot,health,error){
   stateEl.textContent='🟢 自动更新正常';stateEl.style.color='#059669';stateEl.title='latest 与 health 校验一致';
 }
 
-function loadDataFreshnessStatus(requestIdentity){
+function loadDataFreshnessStatus(){
   Promise.all([
     fetch(DATA_API_DIV+'/latest',{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('latest HTTP '+r.status);return r.json();}).then(function(value){return{value:value};}).catch(function(error){return{error:error};}),
     fetch(DATA_API_DIV+'/health',{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('health HTTP '+r.status);return r.json();}).then(function(value){return{value:value};}).catch(function(error){return{error:error};})
-  ]).then(function(results){if(!requestIdentity||isCurrentIndexRequest(requestIdentity))renderDataFreshnessStatus(results[0].value||null,results[1].value||null,results[0].error||results[1].error||null);});
+  ]).then(function(results){renderDataFreshnessStatus(results[0].value||null,results[1].value||null,results[0].error||results[1].error||null);});
 }
 
 loadDataFreshnessStatus();
@@ -472,16 +472,6 @@ function renderIndexSelector(){
 function updateIndexTitle(config){var title=g('etf-title');if(title&&config)title.textContent=config.name+' · '+config.code;}
 var indexActivationId=0;
 var indexActivationController=null;
-function captureIndexRequestIdentity(requestedIndexCode){
-  return Object.freeze({
-    activationId:indexActivationId,
-    requestedIndexCode:String(requestedIndexCode||_selIndex||''),
-    signal:indexActivationController&&indexActivationController.signal?indexActivationController.signal:undefined
-  });
-}
-function isCurrentIndexRequest(requestIdentity){
-  return!!requestIdentity&&requestIdentity.activationId===indexActivationId&&requestIdentity.requestedIndexCode===_selIndex;
-}
 function selectIndex(idxCode, etfCode) {
   var config=getIndexConfig(idxCode);
   if(!config){console.error('[Dividend V1.1] 指数配置不存在或未启用:',idxCode);showMsg('⚠️ 指数配置不存在或未启用：'+idxCode);return false;}
@@ -502,13 +492,12 @@ async function activateIndex(code){
   if(indexActivationController)indexActivationController.abort();
   indexActivationController=typeof AbortController==='function'?new AbortController():null;
   if(!selectIndex(code,''))return false;
-  var requestIdentity=captureIndexRequestIdentity(code);
   clearAll();
   if(window.PineScoreResolver&&typeof window.PineScoreResolver.render==='function')window.PineScoreResolver.render();
   var historyDate=g('backfill-date-div');
-  if(historyDate&&historyDate.value){var historicalLoaded=await fillHistoricalDate(requestIdentity);if(!historicalLoaded||!isCurrentIndexRequest(requestIdentity))return false;calcScore();return true;}
-  var loaded=await fetchAndFillDiv(null,document.querySelector('.btn-fill'),requestIdentity);
-  if(loaded&&isCurrentIndexRequest(requestIdentity))calcScore();
+  if(historyDate&&historyDate.value){await fillHistoricalDate();if(activationId!==indexActivationId)return false;calcScore();return true;}
+  var loaded=await fetchAndFillDiv(null,document.querySelector('.btn-fill'),{activationId:activationId,signal:indexActivationController&&indexActivationController.signal});
+  if(loaded&&activationId===indexActivationId)calcScore();
   return loaded;
 }
 
@@ -542,7 +531,7 @@ initializeIndexManagement();
 
 // 自动填入今日数据
 function autoFill(){
-  fetchAndFillDiv(null,document.querySelector('.btn-fill'),captureIndexRequestIdentity(_selIndex));
+  fetchAndFillDiv(null, document.querySelector('.btn-fill'));
 }
 
 function localToday(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -551,9 +540,9 @@ function clearHistoricalAutoFields(){
   ['e_price','e_did','e_cn10y','e_did_pct','e_pb','e_pb_pct','e_pe_ttm','e_pe_ttm_pct','e_roe_actual','e_roe','e_spread','e_sma60','e_sma120','e_sma250','e_rsi','e_vol_ratio','e_price_position_252','e_price_252_low','e_price_252_high'].forEach(function(id){var el=g(id);if(el){el.value='';clearDisplayRaw(el);delete el.dataset.manualOverride;}});
   var volume=g('e_vol_state');if(volume){volume.value='';volume.classList.remove('sel');delete volume.dataset.manualOverride;}latestPricePosition252=null;
 }
-function mapLegacyHistoricalData(item,date,requestedIndexCode){
+function mapLegacyHistoricalData(item,date){
   var did=Number(item.did);var roe=Number(item.roe);
-  return {_mode:item._mode||'archived',_fetchedDate:item._fetchedDate||item.date||date,index:item.index||requestedIndexCode,name:item.name||'',price:item.price??item.current_price,price_date:item.price_date||item.date||date,
+  return {_mode:item._mode||'archived',_fetchedDate:item._fetchedDate||item.date||date,index:item.index||_selIndex,name:item.name||'',price:item.price??item.current_price,price_date:item.price_date||item.date||date,
     did:Number.isFinite(did)?did:null,did_date:item.did_date||item.date||date,did_pct:item.did_pct&&typeof item.did_pct==='object'?item.did_pct.value:item.did_pct,
     pb:item.pb,pb_pct:item.pb_pct&&typeof item.pb_pct==='object'?item.pb_pct.value:item.pb_pct,pe_ttm:item.pe_ttm,pe_ttm_pct:item.pe_ttm_pct,
     roe:item.roe,roe_display:Number.isFinite(roe)?(Math.abs(roe)<=1?roe*100:roe):null,estimated:item.estimated,source:item.source||'historical_archive',update_time:item.update_time,
@@ -561,12 +550,11 @@ function mapLegacyHistoricalData(item,date,requestedIndexCode){
     sma60:item.sma60,sma120:item.sma120,sma250:item.sma250,rsi:item.rsi??item.rsi14,vol_ratio:item.vol_ratio??item.volume_ratio_5d,volume_status:item.volume_status,
     price_position_252:item.price_position_252,price_252_low:item.price_252_low,price_252_high:item.price_252_high,technical_date:item.technical_date||item.date||date,technical_source:item.technical_source||'historical_archive',technical_available:true};
 }
-async function loadHistoricalData(date,requestIdentity){
-  var requestCode=requestIdentity&&requestIdentity.requestedIndexCode;
-  var config=getIndexConfig(requestCode);if(!config)throw historicalError('CONFIG_ERROR','请求指数配置不可用：'+requestCode);
+async function loadHistoricalData(date){
+  var config=getIndexConfig(_selIndex);if(!config)throw historicalError('CONFIG_ERROR','当前指数配置不可用');
   var url=DATA_API_DIV+'/archive?index='+encodeURIComponent(config.apiCode)+'&date='+encodeURIComponent(date);
   var response;
-  try{response=await fetch(url,{cache:'no-store',signal:requestIdentity&&requestIdentity.signal});}catch(error){if(error&&error.name==='AbortError')throw error;throw historicalError('API_FAILED','API连接失败：'+(error.message||error));}
+  try{response=await fetch(url,{cache:'no-store'});}catch(error){throw historicalError('API_FAILED','API连接失败：'+(error.message||error));}
   var payload=null;try{payload=await response.json();}catch(error){if(!response.ok)throw historicalError('API_FAILED','API返回不可解析（HTTP '+response.status+'）');}
   if(!response.ok){
     var detail=payload&&(payload.detail||payload.error||payload.reason);
@@ -576,64 +564,53 @@ async function loadHistoricalData(date,requestIdentity){
   }
   var item=DividendV11.unwrapHistoricalPayload(payload);
   if(!item)throw historicalError('DATA_NOT_FOUND','数据不存在：'+date);
-  return item.schema_version==='dividend_indices_snapshot_v1'?mapSnapshotIndexToFormData(item,requestCode):mapLegacyHistoricalData(item,date,requestCode);
+  return item.schema_version==='dividend_indices_snapshot_v1'?mapSnapshotIndexToFormData(item,_selIndex):mapLegacyHistoricalData(item,date);
 }
-async function fillHistoricalDate(requestIdentity){
-  requestIdentity=requestIdentity||captureIndexRequestIdentity(_selIndex);
-  var requestCode=requestIdentity.requestedIndexCode;
-  if(!isCurrentIndexRequest(requestIdentity))return false;
+async function fillHistoricalDate(){
   var input=g('backfill-date-div'),button=g('backfill-button-div');var date=input&&input.value;
-  if(!date){console.error('[Dividend V1.1 historical fill]',{index:requestCode,kind:'DATE_UNAVAILABLE',error:'未选择日期'});showMsg('⚠️ 日期不可用：请先选择历史交易日');return false;}
+  if(!date){console.error('[Dividend V1.1 historical fill]',{kind:'DATE_UNAVAILABLE',error:'未选择日期'});showMsg('⚠️ 日期不可用：请先选择历史交易日');return;}
   var parsed=new Date(date+'T00:00:00');
-  if(isNaN(parsed.getTime())||date>localToday()||parsed.getDay()===0||parsed.getDay()===6){console.error('[Dividend V1.1 historical fill]',{date:date,index:requestCode,kind:'DATE_UNAVAILABLE'});showMsg('⚠️ 日期不可用：'+date+' 不是可回填的历史交易日');return false;}
+  if(isNaN(parsed.getTime())||date>localToday()||parsed.getDay()===0||parsed.getDay()===6){console.error('[Dividend V1.1 historical fill]',{date:date,index:_selIndex,kind:'DATE_UNAVAILABLE'});showMsg('⚠️ 日期不可用：'+date+' 不是可回填的历史交易日');return;}
   var original=button?button.textContent:'';if(button){button.textContent='⏳ 回填中...';button.disabled=true;}showMsg('⏳ 正在加载 '+date+' 的历史数据…');
   try{
-    var data=await loadHistoricalData(date,requestIdentity);
-    if(!isCurrentIndexRequest(requestIdentity))return false;
-    clearHistoricalAutoFields();
-    if(applyDivData(data,{force:true,historical:true,requestIdentity:requestIdentity})===false)return false;
-    if(!isCurrentIndexRequest(requestIdentity))return false;
+    var data=await loadHistoricalData(date);clearHistoricalAutoFields();applyDivData(data,{force:true,historical:true});
     if(g('header-date'))g('header-date').value=date;
-    showMsg('✅ 已回填 <strong>'+date+'</strong> · '+(getIndexConfig(requestCode)||{}).name+' '+requestCode+'。所有可用指标已更新，请点击「计算评分」。');
-    return true;
-  }catch(error){if((error&&error.name==='AbortError')||!isCurrentIndexRequest(requestIdentity))return false;console.error('[Dividend V1.1 historical fill]',{date:date,index:requestCode,kind:error.kind||'API_FAILED',error:error});showMsg('⚠️ 回填失败：'+(error.message||'API失败'));return false;}
-  finally{if(button&&isCurrentIndexRequest(requestIdentity)){button.textContent=original;button.disabled=false;}}
+    showMsg('✅ 已回填 <strong>'+date+'</strong> · '+(getIndexConfig(_selIndex)||{}).name+' '+_selIndex+'。所有可用指标已更新，请点击「计算评分」。');
+  }catch(error){console.error('[Dividend V1.1 historical fill]',{date:date,index:_selIndex,kind:error.kind||'API_FAILED',error:error});showMsg('⚠️ 回填失败：'+(error.message||'API失败'));}
+  finally{if(button){button.textContent=original;button.disabled=false;}}
 }
 function autoFillHistoryDiv(){return fillHistoricalDate();}
 
 // 统一抓取函数
-function fetchAndFillDiv(date, btn, requestIdentity){
-  requestIdentity=requestIdentity||captureIndexRequestIdentity(_selIndex);
-  var requestCode=requestIdentity.requestedIndexCode;
-  if(!isCurrentIndexRequest(requestIdentity))return Promise.resolve(false);
+function fetchAndFillDiv(date, btn, activation){
   var origText = btn ? btn.textContent : '';
   if(btn){btn.textContent='⏳ 抓取中...';btn.disabled=true;}
-  var label = date ? '历史数据（'+date+'）' : '最新数据（'+requestCode+'）';
+  var label = date ? '历史数据（'+date+'）' : '最新数据（'+_selIndex+'）';
   showMsg('⏳ 正在抓取 '+label+'，请稍候…');
 
-  if(date){if(btn){btn.textContent=origText;btn.disabled=false;}return fillHistoricalDate(requestIdentity);}
+  if(date){if(btn){btn.textContent=origText;btn.disabled=false;}return fillHistoricalDate();}
   var url = DATA_API_DIV + '/latest';
 
   var timeout = setTimeout(function(){
-    if(!isCurrentIndexRequest(requestIdentity))return;
-    if(btn){btn.textContent=origText;btn.disabled=false;}showMsg('⚠️ 快照读取超时，未写入任何替代值');
+    if(btn){btn.textContent=origText;btn.disabled=false;}
+    showMsg('⚠️ 快照读取超时，未写入任何替代值');
   }, 15000);
 
-  return fetch(url,{cache:'no-store',signal:requestIdentity.signal})
+  return fetch(url,{cache:'no-store',signal:activation&&activation.signal})
     .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
     .then(function(d){
       clearTimeout(timeout);
-      if(!isCurrentIndexRequest(requestIdentity))return false;
       if(btn){btn.textContent=origText;btn.disabled=false;}
-      if(applyDivData(mapSnapshotIndexToFormData(d,requestCode),{requestIdentity:requestIdentity})===false)return false;
-      loadDataFreshnessStatus(requestIdentity);
+      if(activation&&activation.activationId!==indexActivationId)return false;
+      applyDivData(mapSnapshotIndexToFormData(d, _selIndex));
+      loadDataFreshnessStatus();
       if(date && g('header-date')) g('header-date').value = date;
       return true;
     })
     .catch(function(err){
       clearTimeout(timeout);
-      if((err&&err.name==='AbortError')||!isCurrentIndexRequest(requestIdentity))return false;
       if(btn){btn.textContent=origText;btn.disabled=false;}
+      if(err&&err.name==='AbortError')return false;
       if(date) showMsg('⚠️ 历史数据抓取失败（'+err.message+'），请手动填写');
       else showMsg('⚠️ 快照读取失败（'+err.message+'），未写入任何替代值');
       return false;
@@ -674,7 +651,6 @@ function mapSnapshotIndexToFormData(snapshot, code){
 // 将 Worker 返回数据填入表单
 function applyDivData(d,options){
   options=options||{};
-  if(options.requestIdentity&&!isCurrentIndexRequest(options.requestIdentity))return false;
   var filled = [], missing = [];
   var isArchived = d&&d._mode === 'archived';
   var isHist     = !!options.historical || isArchived || (d&&d._mode === 'historical');
@@ -763,7 +739,6 @@ function applyDivData(d,options){
 
   showMsg(msg);
   showDivManualReminder();
-  return true;
 }
 
 function showDivManualReminder(){
@@ -1183,8 +1158,6 @@ window.addEventListener('message', function(e) {
   var d = e.data;
   if (!d || d.type !== 'ETF_AUTOFILL') return;
   var m = d.data;
-  var requestIdentity=d.requestIdentity||captureIndexRequestIdentity(m&&m.code);
-  if(!m||!isCurrentIndexRequest(requestIdentity)){console.warn('[Dividend V1.3] discarded stale assistant fill',{requestedIndexCode:m&&m.code});return;}
   function setField(id, val) {
     if (val !== '' && val != null) setDisplayNumberValue(id, val);
   }
@@ -1203,7 +1176,8 @@ window.addEventListener('message', function(e) {
   setField('e_price_252_low', m.price_252_low != null ? m.price_252_low : m.price252Low);
   setField('e_price_252_high', m.price_252_high != null ? m.price_252_high : m.price252High);
   latestPricePosition252={value:m.price_position_252??m.pricePosition252??null,low:m.price_252_low??m.price252Low??null,high:m.price_252_high??m.price252High??null,estimated:!!(m.price_position_252_estimated??m.pricePosition252Estimated)};
-  // 身份已在写入前校验；助手数据不得隐式切换指数。
+  // 更新标题代码
+  if (m.code && getIndexConfig(m.code)) selectIndex(m.code,'');
   updateSpread();
   showMsg('✅ 数据助手已自动填入 ' + (m.code||'') + ' 的数据，请补充技术指标后计算评分', 'show');
 });
@@ -1215,10 +1189,8 @@ window.addEventListener('message', function(e) {
     var d = JSON.parse(raw);
     if (d && d.code) {
       localStorage.removeItem('etf_autofill');
-      var requestIdentity=captureIndexRequestIdentity(d.code);
       setTimeout(function(){
-        if(!isCurrentIndexRequest(requestIdentity))return;
-        window.dispatchEvent(new MessageEvent('message',{data:{type:'ETF_AUTOFILL',data:d,requestIdentity:requestIdentity}}));
+        window.dispatchEvent(new MessageEvent('message',{data:{type:'ETF_AUTOFILL',data:d}}));
       }, 800);
     }
   } catch(e) {}
@@ -1230,9 +1202,9 @@ window.addEventListener('message', function(e) {
 自动估值数据：理杏仁指数数据经本地SQLite生成的冻结快照 · 点位单位为指数点<br>隐含ROE为PB/PE-TTM估算值；仅供研究参考，不构成投资建议
 </div>
 <script>
-window.PINE_AUTO_CONFIG=Object.freeze({PINE_AUTO_ENABLED:true,apiUrl:DEPLOYMENT_PRODUCTION_URL+'/api/shadow/pine/latest',schemaVersion:'pine_v7_shadow_v1',engineVersion:'pine-v7-red-rocket-final',allowedProductionScoreEffects:Object.freeze(['none']),tradeSemantics:'none',maxAgeCalendarDays:7,timeoutMs:5000});
+window.PINE_AUTO_CONFIG=Object.freeze({PINE_AUTO_ENABLED:true,apiUrl:location.origin+'/api/shadow/pine/latest',schemaVersion:'pine_v7_shadow_v1',engineVersion:'pine-v7-red-rocket-final',allowedProductionScoreEffects:Object.freeze(['none']),tradeSemantics:'none',maxAgeCalendarDays:7,timeoutMs:5000});
 </script>
 <script src="https://zq609256057-bot.github.io/Dividend-ETF/pine_score_resolver.js"></script>
-<script src="history_backfill_production_adapter.js"></script>
+<script src="https://zq609256057-bot.github.io/Dividend-ETF/history_backfill_shadow_adapter.js"></script>
 </body>
 </html>

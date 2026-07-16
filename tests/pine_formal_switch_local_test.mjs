@@ -29,7 +29,9 @@ assert.match(calc, /f\.e_tech3_manual=storedInputValue\('e_tech3'\)/, 'history m
 assert.match(calc, /f\.pine_resolution=/, 'history must retain Resolver provenance');
 
 assert.match(repoHtml, /<button class="btn-calc" onclick="calcScore\(\)"/);
-assert.match(repoHtml, /<script src="pine_auto_config\.js"><\/script>\s*<script src="pine_score_resolver\.js"><\/script>/);
+assert.match(repoHtml, /window\.PINE_AUTO_CONFIG=Object\.freeze\(\{PINE_AUTO_ENABLED:true,apiUrl:DEPLOYMENT_PRODUCTION_URL\+'\/api\/shadow\/pine\/latest'/);
+assert.match(repoHtml, /<script src="https:\/\/zq609256057-bot\.github\.io\/Dividend-ETF\/pine_score_resolver\.js"><\/script>/);
+assert.match(repoHtml, /<script src="history_backfill_production_adapter\.js"><\/script>/);
 assert.match(repoHtml, /localStorage\.getItem\('div_sel_index'\)/, 'refresh must restore index selection');
 assert.match(resolver, /render\(\);refresh\(\);/, 'page initialization must refresh Auto Pine');
 assert.ok(resolver.indexOf('if(override&&Number.isFinite(manual))') < resolver.indexOf('if(config.PINE_AUTO_ENABLED&&payload)'));
@@ -50,7 +52,9 @@ for (const item of manifest.files) {
   }
 }
 
-assert.match(repoHtml, /switchIndexAtomically\(item\.code/);
-assert.match(repoHtml, /indexDataIdentity/);
+assert.match(repoHtml, /function captureIndexRequestIdentity\(requestedIndexCode\)/);
+assert.match(repoHtml, /requestIdentity\.activationId===indexActivationId&&requestIdentity\.requestedIndexCode===_selIndex/);
+assert.match(repoHtml, /applyDivData\(data,\{force:true,historical:true,requestIdentity:requestIdentity\}\)/);
+assert.match(repoHtml, /signal:requestIdentity\.signal/);
 
-console.log('Pine formal switch: production HTML, flag, Resolver gates, scoring formula, refresh, frozen Pine assets and backup integrity PASS');
+console.log('Pine formal switch: V1.3 production HTML, flag, Resolver gates, scoring formula, index identity guard, frozen Pine assets and backup integrity PASS');

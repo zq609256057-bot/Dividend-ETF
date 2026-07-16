@@ -84,20 +84,20 @@ assert.equal(view.total, '--');
 assert.equal(view.fields.price, '');
 
 for (const marker of [
-  'switchIndexAtomically(item.code',
-  "var indexSwitchState='IDLE'",
-  'captureManualDraft(_selIndex)',
-  'restoreManualDraft(code)',
-  "localStorage.getItem('div_index_manual_drafts_v1')",
-  "indexDataIdentity=null",
-  "data.index===code",
-  "signal:context.signal",
-  "indexSwitchState==='LOADING'",
-  '旧指数评分已失效',
-  'LOCAL_DRY_RUN',
+  'var indexActivationId=0',
+  'if(indexActivationController)indexActivationController.abort()',
+  'captureIndexRequestIdentity(code)',
+  'requestIdentity.activationId===indexActivationId',
+  'requestIdentity.requestedIndexCode===_selIndex',
+  'clearAll()',
+  'signal:requestIdentity.signal',
+  'if(!isCurrentIndexRequest(requestIdentity))return false',
+  'applyDivData(data,{force:true,historical:true,requestIdentity:requestIdentity})',
+  'discarded stale assistant fill',
+  "localStorage.getItem('div_sel_index')",
 ]) assert.ok(html.includes(marker), `missing atomic integration marker: ${marker}`);
 
-assert.doesNotMatch(html, /button\.addEventListener\('click',function\(\)\{selectIndex/);
+assert.match(html, /selector\.onchange=function\(\)\{activateIndex\(selector\.value\);\}/);
 assert.match(html, /Manual Override → Python Auto → Manual Input/);
 assert.match(html, /var pineResolution=resolvePineScore\(\);/);
 assert.match(html, /techTotal\+=tech3/);
@@ -107,7 +107,8 @@ assert.match(html, /total=Math\.max\(0,Math\.min\(100,total\+trendBonus\)\)/);
 const sha = path => crypto.createHash('sha256').update(fs.readFileSync(new URL(path, workspace))).digest('hex');
 assert.equal(sha('research_pine_engine/composite_v7.py'), '2934b556981283b8b1e2fc3fb5bc626b095ee5111900824bb72f94351660ca55');
 assert.equal(sha('local_data_collector/config/scoring_rules.json'), '98146e82f17a273c6d96c064033c18f3ada98a6a5e73d48ae7cf355fe06de022');
-assert.equal(sha('production_deploy/worker.js'), 'a9bfe25723518ab7c14782f57ba141e89f6e30deff99c90b6e2261e72361a516');
+// Cloudflare KV Safety Governance approved the guard-only Worker baseline.
+assert.equal(sha('production_deploy/worker.js'), '6074e0e5dc66cc9b5d9d9e73318ca583f3b2aaf8396ba5b8941ec102ce85aae3');
 
 const backupManifest = JSON.parse(fs.readFileSync(new URL('PINE_INDEX_SWITCH_FIX_BACKUP_MANIFEST.json', repo), 'utf8'));
 for (const item of backupManifest.files) {
@@ -117,4 +118,4 @@ for (const item of backupManifest.files) {
 }
 assert.equal(backupManifest.kvWrites, 0);
 
-console.log('Index switch atomic: clear-before-title paint, auto load, mismatch, failure, three-switch race, manual isolation markers and frozen assets PASS');
+console.log('Index switch atomic: controller race model, V1.3 activation identity, abort/stale guards, scoring freeze and frozen assets PASS');
