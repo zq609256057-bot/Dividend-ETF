@@ -10,7 +10,7 @@
   "deployed": false,
   "published": false,
   "files": {
-    "worker.mjs": "25ded732993d98d565009178243af34ad265761a9439b325d7b7a915b924b6b4",
+    "worker.mjs": "d852531aed2c694133136dc5dbf8e5ed873a128934d74e34c91cbdcfdcdc8d41",
     "public/index.html": "0959090f069122aa0cb75248c4d4ee4c1591d9ed702c647ed83d4ad914eec06e",
     "public/index_management.js": "371f353fd9475f14c6e3c5bd2dfa6579b92e26ff983f96eb2ef2e5dadecf0110",
     "index_registry.json": "2129b93f3fe954cc7312610a92d17b3a806d57eec76e15b9debe816d2c6d5356",

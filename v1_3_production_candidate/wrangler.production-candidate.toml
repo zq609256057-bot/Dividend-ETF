@@ -3,6 +3,9 @@ main = "worker.mjs"
 compatibility_date = "2026-07-16"
 workers_dev = true
 
+[vars]
+DEPLOYMENT_ENVIRONMENT = "candidate"
+
 # Candidate only. The release renderer must replace this placeholder with the
 # existing Production namespace ID after explicit approval. Never commit a
 # token or SNAPSHOT_ADMIN_TOKEN value here.

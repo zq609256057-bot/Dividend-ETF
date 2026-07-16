@@ -16,6 +16,7 @@ for (const code of ['000922', '930955']) history.set(`history_cache:${code}:2026
   valuation: {}, macro: {}, technical: {}, pine: {}, metadata: {},
 });
 const env = {
+  DEPLOYMENT_ENVIRONMENT: 'candidate',
   DIVIDEND_SNAPSHOT: snapshot,
   DIVIDEND_SNAPSHOTS: {
     get: async key => history.get(key) || (key === 'dividend_indices_last_success' ? snapshot : null),

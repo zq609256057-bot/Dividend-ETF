@@ -25,6 +25,8 @@ assert.equal(normalizedCandidateHtml, shadowHtml, 'Candidate HTML may differ fro
 
 assert.match(wrangler, /^name = "dividend-dashboard-api-v1-3-production-candidate"$/m);
 assert.doesNotMatch(wrangler, /^name = "dividend-dashboard-api"$/m);
+assert.match(wrangler, /^DEPLOYMENT_ENVIRONMENT = "candidate"$/m);
+assert.doesNotMatch(wrangler, /^DEPLOYMENT_ENVIRONMENT = "production"$/m);
 assert.match(wrangler, /binding = "DIVIDEND_SNAPSHOTS"/);
 assert.match(wrangler, /id = "__PRODUCTION_KV_NAMESPACE_ID__"/);
 assert.doesNotMatch(wrangler, /DIVIDEND_SHADOW_KV|HISTORY_ENGINE|SNAPSHOT_ADMIN_TOKEN\s*=/);
@@ -38,6 +40,10 @@ assert.match(worker, /url\.pathname === '\/archive'/);
 assert.match(worker, /url\.pathname === '\/dividend-data'/);
 assert.match(worker, /env\.DIVIDEND_SNAPSHOTS\.put/);
 assert.doesNotMatch(worker, /setInterval|setTimeout|scheduled\s*\(/);
+assert.match(worker, /environment === 'candidate'/);
+assert.match(worker, /environment === 'production'/);
+assert.match(worker, /DEPLOYMENT_ENVIRONMENT_REQUIRED/);
+assert.match(worker, /DEPLOYMENT_ENVIRONMENT_INVALID/);
 
 assert.match(html, /id="index-selector"/);
 assert.match(html, /id="index-code-search"/);

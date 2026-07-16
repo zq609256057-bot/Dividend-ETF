@@ -30,6 +30,38 @@ function parseValue(value, fallback) {
   return value;
 }
 
+function deploymentIdentity(env) {
+  const environment = env?.DEPLOYMENT_ENVIRONMENT;
+  if (environment === 'candidate') {
+    return {
+      ok: true,
+      service: 'dividend-index-management-production-candidate',
+      production: false,
+      releaseCandidate: true,
+      environment,
+    };
+  }
+  if (environment === 'production') {
+    return {
+      ok: true,
+      service: 'dividend-index-management-production',
+      production: true,
+      releaseCandidate: false,
+      environment,
+    };
+  }
+  return {
+    ok: false,
+    error: environment == null || environment === ''
+      ? 'DEPLOYMENT_ENVIRONMENT_REQUIRED'
+      : 'DEPLOYMENT_ENVIRONMENT_INVALID',
+    service: 'dividend-index-management-configuration-error',
+    production: false,
+    releaseCandidate: false,
+    environment: environment || null,
+  };
+}
+
 function registryConfig(env) {
   const value = parseValue(env?.INDEX_REGISTRY_JSON, REGISTRY_CONFIG);
   if (value?.schemaVersion !== REGISTRY_SCHEMA_VERSION || !Array.isArray(value?.indices)) {
@@ -327,12 +359,27 @@ async function handleGet(request, env) {
   }
   if (url.pathname === '/api/shadow/pine/latest') return pineResponse(env);
   if (url.pathname === '/health') {
+    const identity = deploymentIdentity(env);
+    if (!identity.ok) {
+      return json(503, {
+        status: 'configuration_error',
+        error: identity.error,
+        service: identity.service,
+        production: identity.production,
+        releaseCandidate: identity.releaseCandidate,
+        environment: identity.environment,
+        kvWrites: 0,
+        registrySchemaVersion: REGISTRY_SCHEMA_VERSION,
+        as_of_date: null,
+      });
+    }
     const snapshot = filterSnapshot(await loadSnapshot(env), env);
     return json(200, {
       status: snapshot ? 'ok' : 'not_initialized',
-      service: 'dividend-index-management-production-candidate',
-      production: false,
-      releaseCandidate: true,
+      service: identity.service,
+      production: identity.production,
+      releaseCandidate: identity.releaseCandidate,
+      environment: identity.environment,
       kvWrites: 0,
       registrySchemaVersion: REGISTRY_SCHEMA_VERSION,
       as_of_date: snapshot?.as_of_date || null,
@@ -356,4 +403,4 @@ export default {
   },
 };
 
-export {enabledRegistry, handleSnapshotUpload, indicesResponse, validateSnapshot};
+export {deploymentIdentity, enabledRegistry, handleSnapshotUpload, indicesResponse, validateSnapshot};
