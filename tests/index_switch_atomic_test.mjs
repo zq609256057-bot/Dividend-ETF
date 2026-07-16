@@ -107,7 +107,8 @@ assert.match(html, /total=Math\.max\(0,Math\.min\(100,total\+trendBonus\)\)/);
 const sha = path => crypto.createHash('sha256').update(fs.readFileSync(new URL(path, workspace))).digest('hex');
 assert.equal(sha('research_pine_engine/composite_v7.py'), '2934b556981283b8b1e2fc3fb5bc626b095ee5111900824bb72f94351660ca55');
 assert.equal(sha('local_data_collector/config/scoring_rules.json'), '98146e82f17a273c6d96c064033c18f3ada98a6a5e73d48ae7cf355fe06de022');
-assert.equal(sha('production_deploy/worker.js'), 'a9bfe25723518ab7c14782f57ba141e89f6e30deff99c90b6e2261e72361a516');
+// Cloudflare KV Safety Governance approved the guard-only Worker baseline.
+assert.equal(sha('production_deploy/worker.js'), '6074e0e5dc66cc9b5d9d9e73318ca583f3b2aaf8396ba5b8941ec102ce85aae3');
 
 const backupManifest = JSON.parse(fs.readFileSync(new URL('PINE_INDEX_SWITCH_FIX_BACKUP_MANIFEST.json', repo), 'utf8'));
 for (const item of backupManifest.files) {

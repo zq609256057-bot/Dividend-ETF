@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "dividend_v1_3_production_candidate_manifest_v1",
+  "status": "release_candidate",
+  "branch": "feature/v1.3-production-release-candidate",
+  "baseCommit": "5c9626226562e5e23a672e2e56373c5e9b9435af",
+  "rollbackCommit": "5c9626226562e5e23a672e2e56373c5e9b9435af",
+  "shadowWorkerVersion": "24412e62-d77d-4fd2-b523-f8aaf3257600",
+  "enabledCodes": ["000922", "930955"],
+  "kvWritesDuringPreparation": 0,
+  "deployed": false,
+  "published": false,
+  "files": {
+    "worker.mjs": "88977e1d48868393cee597b8decb84605a39882a452914fac8acafc018b50023",
+    "public/index.html": "0959090f069122aa0cb75248c4d4ee4c1591d9ed702c647ed83d4ad914eec06e",
+    "public/index_management.js": "371f353fd9475f14c6e3c5bd2dfa6579b92e26ff983f96eb2ef2e5dadecf0110",
+    "index_registry.json": "2129b93f3fe954cc7312610a92d17b3a806d57eec76e15b9debe816d2c6d5356",
+    "pine_shadow_latest.canonical.json": "35f3c0bf5686ee6382888d14c96c1d2b521f259e22a4edaccb44e3904153e023"
+  },
+  "protectedHashes": {
+    "production_index.html": "aba90da354c1c6de15e0c95c92c7cecf9a59f769c66a7b3299835bd71db24a97",
+    "pine_score_resolver.js": "29c039e13662d174c9c85c0540bd4782d234cc14c7331aa26518dbfa438e43f4",
+    "composite_v7.py": "2934b556981283b8b1e2fc3fb5bc626b095ee5111900824bb72f94351660ca55",
+    "scoring_rules.json": "98146e82f17a273c6d96c064033c18f3ada98a6a5e73d48ae7cf355fe06de022",
+    "kv_guarded_production_worker.js": "6074e0e5dc66cc9b5d9d9e73318ca583f3b2aaf8396ba5b8941ec102ce85aae3"
+  }
+}
