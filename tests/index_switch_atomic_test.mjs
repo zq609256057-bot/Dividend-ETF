@@ -84,20 +84,20 @@ assert.equal(view.total, '--');
 assert.equal(view.fields.price, '');
 
 for (const marker of [
-  'switchIndexAtomically(item.code',
-  "var indexSwitchState='IDLE'",
-  'captureManualDraft(_selIndex)',
-  'restoreManualDraft(code)',
-  "localStorage.getItem('div_index_manual_drafts_v1')",
-  "indexDataIdentity=null",
-  "data.index===code",
-  "signal:context.signal",
-  "indexSwitchState==='LOADING'",
-  '旧指数评分已失效',
-  'LOCAL_DRY_RUN',
+  'var indexActivationId=0',
+  'if(indexActivationController)indexActivationController.abort()',
+  'captureIndexRequestIdentity(code)',
+  'requestIdentity.activationId===indexActivationId',
+  'requestIdentity.requestedIndexCode===_selIndex',
+  'clearAll()',
+  'signal:requestIdentity.signal',
+  'if(!isCurrentIndexRequest(requestIdentity))return false',
+  'applyDivData(data,{force:true,historical:true,requestIdentity:requestIdentity})',
+  'discarded stale assistant fill',
+  "localStorage.getItem('div_sel_index')",
 ]) assert.ok(html.includes(marker), `missing atomic integration marker: ${marker}`);
 
-assert.doesNotMatch(html, /button\.addEventListener\('click',function\(\)\{selectIndex/);
+assert.match(html, /selector\.onchange=function\(\)\{activateIndex\(selector\.value\);\}/);
 assert.match(html, /Manual Override → Python Auto → Manual Input/);
 assert.match(html, /var pineResolution=resolvePineScore\(\);/);
 assert.match(html, /techTotal\+=tech3/);
@@ -118,4 +118,4 @@ for (const item of backupManifest.files) {
 }
 assert.equal(backupManifest.kvWrites, 0);
 
-console.log('Index switch atomic: clear-before-title paint, auto load, mismatch, failure, three-switch race, manual isolation markers and frozen assets PASS');
+console.log('Index switch atomic: controller race model, V1.3 activation identity, abort/stale guards, scoring freeze and frozen assets PASS');
