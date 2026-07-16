@@ -5,11 +5,19 @@
   var originalMaTrend=root.maTrendHistory;
   var originalResolve=root.resolvePineScore;
   var current=null;
+  var DEFAULT_LABEL='查询历史';
+  var LOADING_LABEL='⏳ 计算中...';
+  var historyRequestId=0;
+  var currentRequestId=0;
 
   function error(kind,message){var value=new Error(message);value.kind=kind;return value;}
   function detail(payload,fallback){return payload&&(payload.detail||payload.reason||payload.error)||fallback;}
   function capture(code){return root.captureIndexRequestIdentity(code||root._selIndex);}
   function isCurrent(identity){return root.isCurrentIndexRequest(identity);}
+  function setButtonState(button,isLoading){if(button){button.textContent=isLoading?LOADING_LABEL:DEFAULT_LABEL;button.disabled=!!isLoading;}}
+  function beginRequest(button){currentRequestId=++historyRequestId;setButtonState(button,true);return currentRequestId;}
+  function ownsRequest(requestId,identity){return requestId===currentRequestId&&isCurrent(identity);}
+  function finishRequest(button,requestId,identity){if(!ownsRequest(requestId,identity))return false;setButtonState(button,false);return true;}
   function contextFrom(payload){return{code:payload.code,date:payload.date,maHistory:(payload.technical||{}).priceMaHistory||[],pine:payload.pine||null};}
   function mapPayload(payload){
     var v=payload.valuation||{},m=payload.macro||{},t=payload.technical||{};
@@ -83,26 +91,27 @@
     if(!isCurrent(requestIdentity))return false;
     var input=root.g('backfill-date-div'),button=root.g('backfill-button-div'),date=input&&input.value;
     if(!date){root.showMsg('⚠️ 日期不可用：请先选择历史交易日');return false;}
-    var original=button?button.textContent:'';if(button){button.textContent='⏳ 计算中...';button.disabled=true;}
+    var requestId=beginRequest(button);
     root.showMsg('⏳ 正在动态计算 '+date+' 的历史指标…');
     try{
       var data=await load(date,requestIdentity);
-      if(!isCurrent(requestIdentity))return false;
+      if(!ownsRequest(requestId,requestIdentity))return false;
       root.clearHistoricalAutoFields();
       if(root.applyDivData(data,{force:true,historical:true,requestIdentity:requestIdentity})===false)return false;
-      if(!isCurrent(requestIdentity))return false;
+      if(!ownsRequest(requestId,requestIdentity))return false;
       current=data._historyPineContext;
       root.g('header-date').value=date;
       renderHistoricalPine();
       root.showMsg('✅ 数据来源：<strong>Historical Calculation</strong> · 日期：<strong>'+date+'</strong> · 指数：<strong>'+requestCode+'</strong> · 已生成完整历史评分输入，请点击「计算评分」。');
       return true;
     }catch(cause){
-      if((cause&&cause.name==='AbortError')||!isCurrent(requestIdentity))return false;
+      if((cause&&cause.name==='AbortError')||!ownsRequest(requestId,requestIdentity))return false;
       console.error('[Dividend V1.3 historical calculation]',{date:date,index:requestCode,kind:cause.kind||'API_FAILED',error:cause});
       root.showMsg('⚠️ 回填失败：'+(cause.message||'历史计算失败'));return false;
-    }finally{if(button&&isCurrent(requestIdentity)){button.textContent=original;button.disabled=false;}}
+    }finally{finishRequest(button,requestId,requestIdentity);}
   };
   root.autoFillHistoryDiv=root.fillHistoricalDate;
-  root.DividendHistoryCandidate={api:api,mapPayload:mapPayload,load:load,renderPine:renderHistoricalPine,get current(){return current;}};
+  setButtonState(root.document&&root.document.getElementById('backfill-button-div'),false);
+  root.DividendHistoryCandidate={api:api,mapPayload:mapPayload,load:load,renderPine:renderHistoricalPine,DEFAULT_LABEL:DEFAULT_LABEL,LOADING_LABEL:LOADING_LABEL,get current(){return current;},get currentRequestId(){return currentRequestId;}};
   root.DividendHistoryShadow=root.DividendHistoryCandidate;
 })(typeof globalThis!=='undefined'?globalThis:this);

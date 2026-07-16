@@ -8,9 +8,10 @@
   "enabledCodes": ["000922", "930955"],
   "kvWritesDuringPreparation": 0,
   "historyIdentityFixStatus": "candidate_revalidated",
-  "previousCandidateVersion": "d0bdf815-0b3e-4d5b-b368-c826b6a793ab",
-  "candidateVersion": "bf54abd0-8159-4e49-9cd9-62f28269038f",
-  "candidateDeployedAt": "2026-07-16T08:43:56.229Z",
+  "historyLoadingOwnershipFixStatus": "candidate_revalidated",
+  "previousCandidateVersion": "bf54abd0-8159-4e49-9cd9-62f28269038f",
+  "candidateVersion": "9d1bbef2-f26f-4467-96ba-8abb3b1af881",
+  "candidateDeployedAt": "2026-07-16T11:50:43.731Z",
   "deployed": true,
   "published": false,
   "productionReleaseStatus": "prepared",
@@ -18,9 +19,9 @@
     "worker.mjs": "d852531aed2c694133136dc5dbf8e5ed873a128934d74e34c91cbdcfdcdc8d41",
     "public/index.html": "d27602ec7f98a2fbe799765d47f5a76adeae3b1e88d13eefc33c76441653fdce",
     "public/index_management.js": "371f353fd9475f14c6e3c5bd2dfa6579b92e26ff983f96eb2ef2e5dadecf0110",
-    "public/history_backfill_candidate_adapter.js": "d40c285cc8efbb5de420414e017c555bbea96a88c1154b7e01ba57a62e735721",
+    "public/history_backfill_candidate_adapter.js": "9a74593f4871d3694315c56e600a7addad80a35e5747d0ea9aa8e68a503048a6",
     "tests/historical_identity_guard_test.mjs": "ae1c83378b29392f9d8111e975c70db9db3bff1ac41065e03fe1abc27fba8b70",
-    "tests/history_candidate_adapter_test.mjs": "2a66f3795402944ba57197fe8f0dccee55c3675c2af648cce8ec57c899883627",
+    "tests/history_candidate_adapter_test.mjs": "b8080a7a0bde0bf93681befb8bfddff9bda9183e512bf91f9eb508d013aabe8e",
     "index_registry.json": "2129b93f3fe954cc7312610a92d17b3a806d57eec76e15b9debe816d2c6d5356",
     "pine_shadow_latest.canonical.json": "35f3c0bf5686ee6382888d14c96c1d2b521f259e22a4edaccb44e3904153e023"
   },
@@ -34,6 +35,6 @@
   "productionReleaseFiles": {
     "../index.html": "fe4916d10faa32d26db9026bf70886032ba3fdeb4793b40c5864afc428f15bc8",
     "../index_management.js": "371f353fd9475f14c6e3c5bd2dfa6579b92e26ff983f96eb2ef2e5dadecf0110",
-    "../history_backfill_production_adapter.js": "66a35e5f835d596280755e74b778216984af7c29e9ceac87e00afde73c4713be"
+    "../history_backfill_production_adapter.js": "f19b360cd281c1cecdd23008546a1bc0ede779dbbadce8dd48de54a4ea6ac935"
   }
 }

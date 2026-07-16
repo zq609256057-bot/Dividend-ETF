@@ -85,6 +85,10 @@ assert.doesNotMatch(html, /<script src="https:\/\/zq609256057-bot\.github\.io\/D
 assert.match(historyAdapter, /payload\.code!==requestCode/);
 assert.match(historyAdapter, /signal:requestIdentity\.signal/);
 assert.match(historyAdapter, /if\(override&&override\.checked\)return originalResolve\(\);/);
+assert.match(historyAdapter, /requestId===currentRequestId&&isCurrent\(identity\)/);
+assert.match(historyAdapter, /DEFAULT_LABEL='查询历史'/);
+assert.match(historyAdapter, /LOADING_LABEL='⏳ 计算中\.\.\.'/);
+assert.doesNotMatch(historyAdapter, /original=button|button\?button\.textContent/);
 assert.doesNotMatch(historyAdapter, /DIVIDEND_SNAPSHOTS|admin\/snapshot|\.put\(/);
 const normalizedProductionHtml = productionHtml
   .replace('V1.3 Production</title>', 'V1.3 Production Candidate</title>')
@@ -96,7 +100,7 @@ const normalizedProductionHtml = productionHtml
   .replace('<script src="history_backfill_production_adapter.js"></script>', '<script src="history_backfill_candidate_adapter.js"></script>');
 assert.equal(normalizedProductionHtml, html, 'Production Pages HTML must be the accepted Candidate shell with only audited runtime substitutions');
 assert.equal(productionManager, manager, 'Production Index Manager must be byte-identical to Candidate');
-assert.equal(productionHistoryAdapter.replaceAll('DividendHistoryProduction', 'DividendHistoryCandidate'), historyAdapter, 'Production history adapter must be behavior-identical to Candidate');
+assert.equal(productionHistoryAdapter.replaceAll('DividendHistoryProduction', 'DividendHistoryCandidate'), historyAdapter, 'Production history adapter must be behavior-identical to the accepted Candidate at cutover');
 for (const [file, expected] of Object.entries(manifest.files)) assert.equal(hash(file), expected, `release manifest hash: ${file}`);
 const protectedPaths = {
   'pine_score_resolver.js': '../pine_score_resolver.js',

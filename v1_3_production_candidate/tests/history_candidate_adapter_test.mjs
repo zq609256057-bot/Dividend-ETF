@@ -26,7 +26,7 @@ function payload(code = '000922') {
 }
 
 function harness() {
-  const pending = deferred();
+  const requests = [];
   const elements = {
     'backfill-date-div': {value: '2026-07-14'},
     'backfill-button-div': {textContent: '⏮ 回填该日', disabled: false},
@@ -44,7 +44,11 @@ function harness() {
     getIndexConfig: code => ({code, apiCode: code, name: code}),
     g: id => elements[id] || null,
     document: {getElementById: id => elements[id] || null},
-    fetch: () => pending.promise,
+    fetch: (url, options) => {
+      const pending = deferred();
+      requests.push({url, options, pending});
+      return pending.promise;
+    },
     clearHistoricalAutoFields: () => { state.cleared += 1; },
     applyDivData: (data, options) => {
       if (!context.isCurrentIndexRequest(options.requestIdentity)) return false;
@@ -59,52 +63,93 @@ function harness() {
   });
   context.globalThis = context;
   vm.runInContext(`${guardSource}\n${adapter}`, context);
-  return {context, pending, elements, state};
+  return {context, requests, elements, state};
 }
 
-// The deployed Candidate adapter commits a current response and installs historical Pine context.
+function switchIndex(harness, code) {
+  const {context} = harness;
+  if (context.indexActivationController) context.indexActivationController.abort();
+  context.indexActivationId += 1;
+  context._selIndex = code;
+  context.indexActivationController = new AbortController();
+}
+
+// Case 1: a normal 000922 request commits and always restores the canonical button state.
 {
   const h = harness();
+  assert.equal(h.elements['backfill-button-div'].textContent, '查询历史');
   const promise = h.context.fillHistoricalDate();
-  h.pending.resolve({ok: true, status: 200, json: async () => payload()});
+  assert.equal(h.elements['backfill-button-div'].textContent, '⏳ 计算中...');
+  assert.equal(h.elements['backfill-button-div'].disabled, true);
+  h.requests[0].pending.resolve({ok: true, status: 200, json: async () => payload()});
   assert.equal(await promise, true);
   assert.equal(h.state.applied.length, 1);
   assert.equal(h.context.DividendHistoryCandidate.current.code, '000922');
   assert.equal(h.elements['pine-auto-score'].textContent, '3.0');
+  assert.equal(h.elements['backfill-button-div'].textContent, '查询历史');
+  assert.equal(h.elements['backfill-button-div'].disabled, false);
 }
 
-// A stale response cannot touch fields, errors, header date or Pine context.
+// Case 2: rapid 000922 -> 930955 -> 000922 commits only the final request and restores the button.
+{
+  const h = harness();
+  const first = h.context.fillHistoricalDate();
+  switchIndex(h, '930955');
+  const second = h.context.fillHistoricalDate();
+  switchIndex(h, '000922');
+  const third = h.context.fillHistoricalDate();
+  h.requests[2].pending.resolve({ok: true, status: 200, json: async () => payload('000922')});
+  assert.equal(await third, true);
+  h.requests[0].pending.resolve({ok: true, status: 200, json: async () => payload('000922')});
+  h.requests[1].pending.resolve({ok: true, status: 200, json: async () => payload('930955')});
+  assert.deepEqual(await Promise.all([first, second]), [false, false]);
+  assert.deepEqual(h.state.applied.map(item => item.index), ['000922']);
+  assert.equal(h.context.DividendHistoryCandidate.current.code, '000922');
+  assert.equal(h.elements['backfill-button-div'].textContent, '查询历史');
+  assert.equal(h.elements['backfill-button-div'].disabled, false);
+}
+
+// Case 3: a late old response cannot overwrite the new index or touch its completed button state.
+{
+  const h = harness();
+  const oldRequest = h.context.fillHistoricalDate();
+  switchIndex(h, '930955');
+  const currentRequest = h.context.fillHistoricalDate();
+  h.requests[1].pending.resolve({ok: true, status: 200, json: async () => payload('930955')});
+  assert.equal(await currentRequest, true);
+  assert.equal(h.elements['backfill-button-div'].textContent, '查询历史');
+  h.requests[0].pending.resolve({ok: true, status: 200, json: async () => payload('000922')});
+  assert.equal(await oldRequest, false);
+  assert.deepEqual(h.state.applied.map(item => item.index), ['930955']);
+  assert.equal(h.context.DividendHistoryCandidate.current.code, '930955');
+  assert.equal(h.elements['backfill-button-div'].textContent, '查询历史');
+  assert.equal(h.elements['backfill-button-div'].disabled, false);
+}
+
+// Case 4: an HTTP error restores the canonical button label and enabled state.
 {
   const h = harness();
   const promise = h.context.fillHistoricalDate();
-  h.context.indexActivationController.abort();
-  h.context.indexActivationController = new AbortController();
-  h.context.indexActivationId = 2;
-  h.context._selIndex = '930955';
-  h.pending.resolve({ok: true, status: 200, json: async () => payload('000922')});
+  h.requests[0].pending.resolve({ok: false, status: 500, json: async () => ({error: 'API_FAILED', detail: 'test failure'})});
   assert.equal(await promise, false);
   assert.equal(h.state.applied.length, 0);
-  assert.equal(h.context.DividendHistoryCandidate.current, null);
-  assert.equal(h.elements['header-date'].value, 'UNCHANGED');
-  assert.equal(h.state.errors.length, 0);
-}
-
-// A current response with the wrong code fails closed and does not commit.
-{
-  const h = harness();
-  const promise = h.context.fillHistoricalDate();
-  h.pending.resolve({ok: true, status: 200, json: async () => payload('930955')});
-  assert.equal(await promise, false);
-  assert.equal(h.state.applied.length, 0);
-  assert.equal(h.context.DividendHistoryCandidate.current, null);
   assert.equal(h.state.messages.filter(message => message.includes('回填失败')).length, 1);
+  assert.equal(h.elements['backfill-button-div'].textContent, '查询历史');
+  assert.equal(h.elements['backfill-button-div'].disabled, false);
 }
 
-// Manual Override remains above historical Python Auto.
+// Identity mismatch still fails closed and Manual Override remains above historical Python Auto.
 {
+  const mismatch = harness();
+  const mismatchPromise = mismatch.context.fillHistoricalDate();
+  mismatch.requests[0].pending.resolve({ok: true, status: 200, json: async () => payload('930955')});
+  assert.equal(await mismatchPromise, false);
+  assert.equal(mismatch.state.applied.length, 0);
+  assert.equal(mismatch.context.DividendHistoryCandidate.current, null);
+
   const h = harness();
   const promise = h.context.fillHistoricalDate();
-  h.pending.resolve({ok: true, status: 200, json: async () => payload()});
+  h.requests[0].pending.resolve({ok: true, status: 200, json: async () => payload()});
   assert.equal(await promise, true);
   h.elements['pine-manual-override-enabled'].checked = true;
   assert.deepEqual(h.context.resolvePineScore(), {score: 8, source: 'Manual Override', mode: 'override', date: '2026-07-14', engineVersion: null});
@@ -114,6 +159,11 @@ assert.match(adapter, /signal:requestIdentity\.signal/);
 assert.match(adapter, /payload\.code!==requestCode/);
 assert.match(adapter, /if\(!isCurrent\(requestIdentity\)\)return false;/);
 assert.match(adapter, /requestIdentity:requestIdentity/);
+assert.match(adapter, /historyRequestId/);
+assert.match(adapter, /requestId===currentRequestId&&isCurrent\(identity\)/);
+assert.match(adapter, /DEFAULT_LABEL='查询历史'/);
+assert.match(adapter, /LOADING_LABEL='⏳ 计算中\.\.\.'/);
+assert.doesNotMatch(adapter, /original=button|button\?button\.textContent/);
 assert.doesNotMatch(adapter, /DIVIDEND_SNAPSHOTS|admin\/snapshot|\.put\(/);
 
-console.log('V1.3 Candidate history adapter: current commit, stale discard, identity mismatch and Manual Override precedence PASS');
+console.log('V1.3 Candidate history adapter: normal restore, rapid switch, late discard, HTTP failure restore, identity mismatch and Manual Override precedence PASS');
