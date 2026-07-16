@@ -59,4 +59,15 @@ Only GET requests were sent. No snapshot refresh or `/admin/snapshot` request wa
 - Secret changes: 0
 - GitHub Pages publishes: 0
 
-Rollback remains `7221bebb-719e-4265-8dde-ee5632d3a839` on `dividend-dashboard-api` until final Pages acceptance closes the release.
+## Final online acceptance and rollback
+
+Pages was published through release PR `#1` after the Worker API gate passed. Final browser acceptance found a historical-switch UI state race: data identity remained correct, but the backfill button label stayed permanently at `⏳ 计算中...` after the stale request was discarded.
+
+The Worker was therefore rolled back:
+
+- Restored version: `7221bebb-719e-4265-8dde-ee5632d3a839`
+- Rollback deployment: `2026-07-16T11:26:21.302Z`
+- Traffic: 100% baseline
+- Post-rollback health: HTTP 200, legacy schema `dividend_indices_snapshot_v1`, date `2026-07-14`, codes `000922` and `930955`.
+
+The forward deployment and rollback performed no KV payload writes, KV deletes or snapshot refreshes. The Candidate version remains isolated for a future loading-state repair and revalidation.

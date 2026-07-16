@@ -51,3 +51,16 @@ The formal Pages assets are derived from the revalidated Candidate assets. Only 
 - GitHub Pages publishes: 0
 - Production route changes: 0
 - Secret changes: 0
+
+## Cutover and rollback result
+
+- Forward Worker version: `249eb3fa-cd10-4993-bd1e-2f090c9e5aa9`
+- Forward Pages merge commit: `c0acd37605e460ecd3f9e3590be60655f816e488`
+- Online acceptance blocker: historical-switch data remained isolated, but the shared backfill button label remained permanently at `⏳ 计算中...` after stale-request discard.
+- Worker restored version: `7221bebb-719e-4265-8dde-ee5632d3a839` at 100% traffic.
+- Pages rollback PR: `#2`
+- Pages main after rollback: `41e96ef78abedd38943a0339cc5b819c034529ef`
+- Restored Pages content hash: `aba90da354c1c6de15e0c95c92c7cecf9a59f769c66a7b3299835bd71db24a97`
+- Production KV writes/deletes: `0/0`
+- Snapshot refreshes: `0`
+- Force pushes: `0`
