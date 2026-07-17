@@ -1,0 +1,110 @@
+{
+  "as_of_date": "2026-07-16",
+  "generated_at": "2026-07-17T04:02:04.004147Z",
+  "items": [
+    {
+      "code": "000922",
+      "component_positions": {
+        "macro_score": {
+          "historical_observation_count": 4160,
+          "historical_percentile": 95.57692307692308,
+          "score": 20.0
+        },
+        "pine_score": {
+          "historical_observation_count": 4160,
+          "historical_percentile": 52.59615384615385,
+          "score": 0.0
+        },
+        "technical_score": {
+          "historical_observation_count": 4160,
+          "historical_percentile": 85.28846153846153,
+          "score": 19.65
+        },
+        "valuation_score": {
+          "historical_observation_count": 4160,
+          "historical_percentile": 45.38461538461539,
+          "score": 19.0
+        }
+      },
+      "date": "2026-07-16",
+      "distance_from_high": 22.949999999999996,
+      "distance_from_low": 51.65,
+      "historical_max_date": "2024-09-11",
+      "historical_max_score": 82.6,
+      "historical_min_date": "2009-11-18",
+      "historical_min_score": 8.0,
+      "historical_observation_count": 4160,
+      "historical_percentile": 83.38942307692308,
+      "interpretation_boundary": "historical position only; not a trading signal",
+      "name": "中证红利指数",
+      "percentile_method": "inclusive_empirical_cdf_complete_v1_history",
+      "position_label": "High Historical Attractive",
+      "recent_change": {
+        "20d": -5.750000000000007,
+        "5d": -10.949999999999996,
+        "60d": 16.549999999999997
+      },
+      "regime": "Neutral",
+      "rule_version": "V1.0",
+      "score": 59.65,
+      "status": "complete"
+    },
+    {
+      "code": "930955",
+      "component_positions": {
+        "macro_score": {
+          "historical_observation_count": 1322,
+          "historical_percentile": 87.44326777609682,
+          "score": 20.0
+        },
+        "pine_score": {
+          "historical_observation_count": 1322,
+          "historical_percentile": 55.14372163388805,
+          "score": 0.0
+        },
+        "technical_score": {
+          "historical_observation_count": 1322,
+          "historical_percentile": 72.6928895612708,
+          "score": 15.65
+        },
+        "valuation_score": {
+          "historical_observation_count": 1322,
+          "historical_percentile": 25.18910741301059,
+          "score": 21.0
+        }
+      },
+      "date": "2026-07-16",
+      "distance_from_high": 25.949999999999996,
+      "distance_from_low": 32.849999999999994,
+      "historical_max_date": "2024-09-11",
+      "historical_max_score": 82.6,
+      "historical_min_date": "2021-02-23",
+      "historical_min_score": 23.8,
+      "historical_observation_count": 1322,
+      "historical_percentile": 61.19515885022693,
+      "interpretation_boundary": "historical position only; not a trading signal",
+      "name": "红利低波100指数",
+      "percentile_method": "inclusive_empirical_cdf_complete_v1_history",
+      "position_label": "Above Historical Median",
+      "recent_change": {
+        "20d": -5.950000000000003,
+        "5d": -10.949999999999996,
+        "60d": 6.549999999999997
+      },
+      "regime": "Neutral",
+      "rule_version": "V1.0",
+      "score": 56.65,
+      "status": "complete"
+    }
+  ],
+  "module_version": "Position V1.0",
+  "rule_version": "V1.0",
+  "schema_version": "historical_score_position_snapshot_v1",
+  "snapshot_sha256": "d112ff9e4783704e65c3db44bc3984bebeb412bda5bf9a4e6dc7262a4c8d7fed",
+  "source": {
+    "database_sha256": "48822491d050f126a4b0bb28353f52d34355b26504a7723d8b961916aca0157b",
+    "kind": "historical_score_curve_sqlite_read_only",
+    "table": "historical_score_daily"
+  },
+  "status": "success"
+}
