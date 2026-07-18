@@ -86,9 +86,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 @media(max-width:479px){body{padding:10px}.btn-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.btn-row .btn-fill,.btn-row .btn-calc{min-height:44px;white-space:normal;overflow:hidden;overflow-wrap:anywhere;line-height:1.25}.btn-row .btn-clear{grid-column:1/-1;min-height:40px}.index-selector-controls{grid-template-columns:minmax(0,1fr)}.index-selector-controls button{min-height:40px}}
 </style>
 <link rel="stylesheet" href="https://zq609256057-bot.github.io/Dividend-ETF/pine_auto_candidate.css">
-<link rel="stylesheet" href="score_position_card.css">
 <script src="index_management.js"></script>
-<script src="score_position_adapter.js"></script>
 <script src="https://zq609256057-bot.github.io/Dividend-ETF/dashboard_v11_core.js"></script>
 </head>
 <body>
@@ -203,24 +201,6 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 </div>
 <p style="font-size:11px;color:var(--muted);margin-top:12px">得分越高代表值博率越高 · 60分以上可考虑分批布局</p>
 </div>
-
-<!-- Historical Score Position · Position V1.0 (display only) -->
-<section id="score-position-card" class="card score-position-card" aria-labelledby="score-position-title">
-<div class="card-title"><span id="score-position-title">历史投资价值位置</span><span class="score-position-version">Position V1.0</span></div>
-<div id="score-position-state" class="score-position-state" role="status" aria-live="polite">正在读取历史位置…</div>
-<div id="score-position-content" hidden>
-<div class="score-position-head"><p id="score-position-identity" class="score-position-identity"></p><span id="score-position-regime" class="score-position-regime"></span></div>
-<div class="score-position-core">
-<div class="score-position-metric"><span>当前评分</span><strong id="score-position-score"></strong><small>Investment Attractiveness Score</small></div>
-<div class="score-position-metric"><span>评分历史百分位</span><strong id="score-position-percentile"></strong><small id="score-position-label"></small></div>
-</div>
-<div class="score-position-gauge" aria-label="评分历史百分位位置"><div id="score-position-gauge-fill" class="score-position-gauge-fill"></div><div id="score-position-gauge-marker" class="score-position-gauge-marker"></div></div>
-<div class="score-position-scale"><span>0%</span><span>完整评分历史</span><span>100%</span></div>
-<div class="score-position-section"><h3>评分趋势 · 评分交易日变化</h3><div id="score-position-trends" class="score-position-trends"></div></div>
-<div class="score-position-section"><h3>分项历史位置</h3><div id="score-position-components" class="score-position-components"></div></div>
-<aside class="score-position-boundary" aria-label="历史位置解释边界"><strong>历史百分位不是价格百分位。</strong><span>不是买卖信号。</span><span>不是仓位建议。</span></aside>
-</div>
-</section>
 
 <!-- KPI -->
 <div class="kpi-grid">
@@ -502,16 +482,6 @@ function captureIndexRequestIdentity(requestedIndexCode){
 function isCurrentIndexRequest(requestIdentity){
   return!!requestIdentity&&requestIdentity.activationId===indexActivationId&&requestIdentity.requestedIndexCode===_selIndex;
 }
-function scorePositionRequest(requestIdentity,date){
-  return{code:requestIdentity.requestedIndexCode,date:date||'',ruleVersion:'V1.0',moduleVersion:'Position V1.0',activationId:requestIdentity.activationId};
-}
-function beginScorePosition(requestIdentity){
-  if(window.DividendScorePosition&&typeof window.DividendScorePosition.begin==='function')window.DividendScorePosition.begin(scorePositionRequest(requestIdentity,''));
-}
-function loadScorePosition(requestIdentity,date){
-  if(!window.DividendScorePosition||typeof window.DividendScorePosition.load!=='function')return Promise.resolve({error:new Error('Score Position adapter unavailable')});
-  return window.DividendScorePosition.load(scorePositionRequest(requestIdentity,date));
-}
 function selectIndex(idxCode, etfCode) {
   var config=getIndexConfig(idxCode);
   if(!config){console.error('[Dividend V1.1] 指数配置不存在或未启用:',idxCode);showMsg('⚠️ 指数配置不存在或未启用：'+idxCode);return false;}
@@ -533,14 +503,12 @@ async function activateIndex(code){
   indexActivationController=typeof AbortController==='function'?new AbortController():null;
   if(!selectIndex(code,''))return false;
   var requestIdentity=captureIndexRequestIdentity(code);
-  beginScorePosition(requestIdentity);
   clearAll();
   if(window.PineScoreResolver&&typeof window.PineScoreResolver.render==='function')window.PineScoreResolver.render();
   var historyDate=g('backfill-date-div');
-  if(historyDate&&historyDate.value){var historicalLoaded=await fillHistoricalDate(requestIdentity);if(!historicalLoaded||!isCurrentIndexRequest(requestIdentity)){if(isCurrentIndexRequest(requestIdentity))await loadScorePosition(requestIdentity,'');return false;}calcScore();await loadScorePosition(requestIdentity,g('header-date')?g('header-date').value:'');return true;}
+  if(historyDate&&historyDate.value){var historicalLoaded=await fillHistoricalDate(requestIdentity);if(!historicalLoaded||!isCurrentIndexRequest(requestIdentity))return false;calcScore();return true;}
   var loaded=await fetchAndFillDiv(null,document.querySelector('.btn-fill'),requestIdentity);
-  if(loaded&&isCurrentIndexRequest(requestIdentity)){calcScore();await loadScorePosition(requestIdentity,g('header-date')?g('header-date').value:'');}
-  else if(isCurrentIndexRequest(requestIdentity))await loadScorePosition(requestIdentity,'');
+  if(loaded&&isCurrentIndexRequest(requestIdentity))calcScore();
   return loaded;
 }
 
