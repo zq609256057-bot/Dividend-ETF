@@ -11,7 +11,7 @@ img,video,svg,canvas{max-width:100%}
 body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#111827;min-height:100vh;padding:16px;overflow-x:hidden}
 .card{background:var(--card);border-radius:12px;box-shadow:var(--shadow);border:.5px solid var(--bd);padding:16px;margin-bottom:12px;overflow:hidden;width:100%;box-sizing:border-box}
 .card,.score-hero{position:relative}
-.card::after,.score-hero::after{content:"gzh@纳指红利养老之路";position:absolute;left:52%;top:66%;transform:translate(-50%,-50%) rotate(-35deg);color:rgba(128,128,128,.08);font-size:15px;font-weight:600;line-height:1;letter-spacing:.4px;white-space:nowrap;pointer-events:none;user-select:none}
+.card::after,.score-hero::after{content:"gzh@纳指红利养老之路";position:absolute;left:52%;top:66%;transform:translate(-50%,-50%) rotate(-35deg);color:rgba(100,100,100,.13);font-size:20px;font-weight:600;line-height:1;letter-spacing:.4px;white-space:nowrap;pointer-events:none;user-select:none}
 .card-title{font-size:13px;font-weight:700;margin-bottom:12px;padding-left:10px;border-left:3px solid var(--purple);white-space:nowrap}
 .score-hero{background:var(--card);border-radius:16px;box-shadow:var(--shadow);border:.5px solid var(--bd);padding:24px 20px;margin-bottom:16px;text-align:center;overflow:hidden}
 .score-big{font-family:monospace;font-size:72px;font-weight:700;line-height:1}
@@ -85,7 +85,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 .index-selector-controls select,.index-selector-controls input{min-width:0;width:100%;padding:8px 10px;border:1px solid #ddd6fe;border-radius:8px;background:#fff;font-size:12px;color:#374151;outline:none}
 .index-selector-controls button{padding:8px 12px;border:0;border-radius:8px;background:#7c3aed;color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
 @media(min-width:480px){.kpi-grid{grid-template-columns:repeat(4,1fr)}}
-@media(max-width:479px){body{padding:10px}.card::after,.score-hero::after{font-size:12px}.btn-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.btn-row .btn-fill,.btn-row .btn-calc{min-height:44px;white-space:normal;overflow:hidden;overflow-wrap:anywhere;line-height:1.25}.btn-row .btn-clear{grid-column:1/-1;min-height:40px}.index-selector-controls{grid-template-columns:minmax(0,1fr)}.index-selector-controls button{min-height:40px}}
+@media(max-width:479px){body{padding:10px}.card::after,.score-hero::after{font-size:15px}.btn-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.btn-row .btn-fill,.btn-row .btn-calc{min-height:44px;white-space:normal;overflow:hidden;overflow-wrap:anywhere;line-height:1.25}.btn-row .btn-clear{grid-column:1/-1;min-height:40px}.index-selector-controls{grid-template-columns:minmax(0,1fr)}.index-selector-controls button{min-height:40px}}
 </style>
 <link rel="stylesheet" href="https://zq609256057-bot.github.io/Dividend-ETF/pine_auto_candidate.css">
 <script src="index_management.js"></script>
@@ -1227,9 +1227,8 @@ window.addEventListener('message', function(e) {
 })();
 </script>
 
-<!-- 数据来源 -->
 <div style="text-align:center;font-size:10px;color:#b0b7c3;margin-top:8px;margin-bottom:16px;padding:8px 16px">
-自动估值数据：理杏仁指数数据经本地SQLite生成的冻结快照 · 点位单位为指数点<br>隐含ROE为PB/PE-TTM估算值；仅供研究参考，不构成投资建议
+仅供研究参考，不构成投资建议
 </div>
 <script>
 window.PINE_AUTO_CONFIG=Object.freeze({PINE_AUTO_ENABLED:true,apiUrl:DEPLOYMENT_PRODUCTION_URL+'/api/shadow/pine/latest',schemaVersion:'pine_v7_shadow_v1',engineVersion:'pine-v7-red-rocket-final',allowedProductionScoreEffects:Object.freeze(['none']),tradeSemantics:'none',maxAgeCalendarDays:7,timeoutMs:5000});
