@@ -154,7 +154,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 </div>
 <div class="btn-row">
 <button class="btn-fill" onclick="autoFill()">⚡ 自动填入今日数据</button>
-<button class="btn-calc" onclick="calcScore()">📊 计算评分</button>
+<button class="btn-calc" onclick="calcScore({manualSimulation:true})">🧪 手动评分模拟</button>
 <button class="btn-clear" onclick="clearAll()">清空</button>
 </div>
 <div style="margin-top:8px;padding:10px 12px;background:#eff6ff;border:.5px solid #bfdbfe;border-radius:10px">
@@ -196,7 +196,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:#11
 <span id="hero-score" class="score-big" style="color:#d97706">--</span>
 <span style="font-size:22px;font-weight:600;color:var(--muted)">/ 100</span>
 </div>
-<div id="hero-pill" class="verdict-pill" style="background:#fef3c7;color:#92400e"><span class="verdict-dot" style="background:#d97706"></span>填入数据后点击「计算评分」</div>
+<div id="hero-pill" class="verdict-pill" style="background:#fef3c7;color:#92400e"><span class="verdict-dot" style="background:#d97706"></span>正在读取 Canonical ScoreResult</div>
 <div class="scale-track"><div id="hero-bar" class="scale-fill" style="width:0%"></div></div>
 <div class="scale-labels">
 <span style="left:0%">0 回避</span><span style="left:40%">40</span><span style="left:60%">60</span><span style="left:80%">80</span><span style="left:100%">100 强买</span>
@@ -364,7 +364,7 @@ var volumeStateInput=g('e_vol_state');if(volumeStateInput)volumeStateInput.addEv
 var d=new Date();
 g('header-date').value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 renderScoreDecomp();
-cloudLoad().then(function(r){ window._etfHistory=Array.isArray(r)?r:[]; renderHistory(r); });
+cloudLoad().then(function(r){ window.__legacyConsumerHistory=Array.isArray(r)?r:[]; });
 })();
 function updateSpread(){
 var did=numericInputValue('e_did'),cn=numericInputValue('e_cn10y');
@@ -791,7 +791,13 @@ function maTrendHistory(code,targetDate){
   return (window._etfHistory||[]).filter(function(record){return record&&record.code===code&&record._form&&(!targetDate||!record.date||record.date<targetDate);}).sort(function(a,b){return (a.date||'').localeCompare(b.date||'');}).slice(-DividendV11.DEFAULT_RULES.historyWindow);
 }
 
-function calcScore(){
+function calcScore(options){
+options=options||{};
+if(options.manualSimulation!==true){
+  if(window.DividendCanonicalConsumer)return window.DividendCanonicalConsumer.refreshCurrent();
+  var waiting=g('hero-pill');if(waiting)waiting.textContent='Canonical ScoreResult 正在连接';
+  return false;
+}
 var price=numericInputValue('e_price'),did=numericInputValue('e_did'),cn10y=numericInputValue('e_cn10y');
 var didPct=numericInputValue('e_did_pct'),pbPct=numericInputValue('e_pb_pct'),roe=numericInputValue('e_roe');
 var sma60=numericInputValue('e_sma60'),sma120=numericInputValue('e_sma120'),sma250=numericInputValue('e_sma250');
@@ -887,6 +893,14 @@ if(_sameCode.length>=1){
   trendBonus=Math.max(-2,Math.min(3,trendBonus));
 }
 total=Math.max(0,Math.min(100,total+trendBonus));
+if(options.legacyRollbackRender!==true){
+  var simulation={mode:'manual_simulation_debug_only',final_score:total,valuation_score:valTotal,technical_score:techTotal,trend_bonus:trendBonus,persisted:false,hero_updated:false};
+  var simulationText=g('calcText'),simulationBox=g('calcResult');
+  if(simulationText)simulationText.textContent='Manual Simulation：'+formatDisplayNumber(total)+'/100（仅调试，不写正式历史，不替换 Canonical Hero）';
+  if(simulationBox)simulationBox.classList.add('show');
+  window.__lastManualScoreSimulation=simulation;
+  return simulation;
+}
 g('hero-score').textContent=formatDisplayNumber(total);g('hero-score').style.color=sc(total,100);
 g('hero-bar').style.width=Math.min(total,100)+'%';
 g('total-display').textContent=formatDisplayNumber(total)+' / 100';g('total-display').style.color=sc(total,100);
@@ -979,6 +993,11 @@ return f;})()});
 showMsg('综合得分：<strong>'+formatDisplayNumber(total)+'/100</strong>（估值'+formatDisplayNumber(valTotal)+'+技术'+formatDisplayNumber(techTotal)+'）');}
 function loadHistory(){return[];}// legacy stub，实际用cloudLoad
 function saveRecord(rec){
+if(window.DividendCanonicalConsumer&&window.DividendCanonicalConsumer.mode==='canonical'){
+  // Manual Simulation is intentionally ephemeral in Canonical mode. Formal
+  // history is written only by the backend capture pipeline.
+  return;
+}
 cloudLoad().then(function(records){
 var key=rec.date+'_'+(rec.code||'');
 var idx=records.findIndex(function(r){return (r.date+'_'+(r.code||''))===key;});
@@ -1017,14 +1036,14 @@ var thead='<thead><tr style="border-bottom:1.5px solid #e5e7eb">'
 function makeRow(item){
   var r=item.r,oi=item.oi;
   return '<tr>'
-  +'<td style="padding:5px 6px;font-size:11px;white-space:nowrap"><span onclick="loadRecord('+oi+')" style="color:var(--purple);font-weight:600;border-bottom:1px dashed;cursor:pointer">'+r.date+'</span></td>'
+  +'<td style="padding:5px 6px;font-size:11px;white-space:nowrap"><span onclick="'+(r._canonical?'DividendCanonicalConsumer.loadExact(\''+r.code+'\',\''+r.date+'\')':'loadRecord('+oi+')')+'" style="color:var(--purple);font-weight:600;border-bottom:1px dashed;cursor:pointer">'+r.date+'</span></td>'
   +'<td style="padding:5px 6px;font-size:11px;font-weight:600;color:var(--purple)">'+(r.code||'')+'</td>'
   +'<td style="padding:5px 6px;font-size:13px;font-weight:700;color:'+sc(r.total,100)+'">'+formatDisplayNumber(r.total)+'</td>'
   +'<td style="padding:5px 6px;font-size:11px">'+formatDisplayNumber(r.valTotal)+'/60</td>'
   +'<td style="padding:5px 6px;font-size:11px">'+formatDisplayNumber(r.techTotal)+'/40</td>'
   +'<td style="padding:5px 6px;font-size:10px;white-space:nowrap;color:'+sc(r.total,100)+'">'+r.level+'</td>'
   +'<td style="padding:5px 6px;font-size:11px">'+(r.price==null?'--':formatDisplayNumber(r.price))+'</td>'
-  +'<td style="padding:5px 6px;text-align:center"><button onclick="deleteRecord('+oi+')" style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:13px">🗑</button></td>'
+  +'<td style="padding:5px 6px;text-align:center">'+(r._canonical?'<span style="color:#9ca3af">只读</span>':'<button onclick="deleteRecord('+oi+')" style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:13px">🗑</button>')+'</td>'
   +'</tr>';
 }
 
@@ -1232,8 +1251,11 @@ window.addEventListener('message', function(e) {
 </div>
 <script>
 window.PINE_AUTO_CONFIG=Object.freeze({PINE_AUTO_ENABLED:true,apiUrl:DEPLOYMENT_PRODUCTION_URL+'/api/shadow/pine/latest',schemaVersion:'pine_v7_shadow_v1',engineVersion:'pine-v7-red-rocket-final',allowedProductionScoreEffects:Object.freeze(['none']),tradeSemantics:'none',maxAgeCalendarDays:7,timeoutMs:5000});
+var LOCAL_CANONICAL_SCORE_API=/^(localhost|127\.0\.0\.1)$/.test(location.hostname)?(new URLSearchParams(location.search).get('canonical_api')||location.origin):null;
+window.CANONICAL_SCORE_CONSUMER_CONFIG=Object.freeze({readMode:'canonical',apiBase:window.DIVIDEND_CANONICAL_SCORE_API||LOCAL_CANONICAL_SCORE_API||DEPLOYMENT_PRODUCTION_URL,ruleVersion:'V1.0'});
 </script>
 <script src="https://zq609256057-bot.github.io/Dividend-ETF/pine_score_resolver.js"></script>
 <script src="history_backfill_production_adapter.js"></script>
+<script src="canonical_score_consumer.js"></script>
 </body>
 </html>
