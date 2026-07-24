@@ -60,3 +60,13 @@ The mode-0600 temporary config used the exact Production Worker name, `DEPLOYMEN
 - GitHub Pages publishes: `0`
 
 No `PUT /admin/snapshot` request was sent.
+
+## Final release confirmation
+
+- Remote `main`: `88d3885a451da67208256a1110129242f993bc40`
+- Release PR: `#3`
+- Production HTML SHA-256: `fe4916d10faa32d26db9026bf70886032ba3fdeb4793b40c5864afc428f15bc8`
+- Production Historical Adapter SHA-256: `f19b360cd281c1cecdd23008546a1bc0ede779dbbadce8dd48de54a4ea6ac935`
+- Final Worker deployment query: version `345f3aad-3ca7-4811-a212-6cadbfb441c6` remains at 100% traffic.
+- Desktop and 390×844 browser acceptance: PASS; Console errors `0/0`.
+- Final rollback status: NOT REQUIRED.

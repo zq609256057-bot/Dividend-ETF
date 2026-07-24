@@ -4,54 +4,61 @@ Date: 2026-07-16
 
 ## Acceptance status
 
-**V1_3_PRODUCTION_RELEASE_ROLLED_BACK**
+**V1_3_PRODUCTION_RELEASE_COMPLETE**
 
-The Production Worker and Pages release were both deployed and exercised at the official URL. All API gates, final score values, index data identity, search, Pine Auto, Manual Override, desktop layout and most mobile checks passed. The release did not close because the historical-switch race leaves the shared backfill button in a permanent loading label. The saved Worker and Pages baselines were restored immediately.
+Production Worker version `345f3aad-3ca7-4811-a212-6cadbfb441c6` and GitHub Pages `main` commit `88d3885a451da67208256a1110129242f993bc40` passed final online acceptance. The release required no rollback.
 
-## Production URL and release identity
+## Deployment verification
 
-- URL: `https://zq609256057-bot.github.io/Dividend-ETF/`
-- Forward Worker version: `249eb3fa-cd10-4993-bd1e-2f090c9e5aa9`
-- Forward Pages merge: `c0acd37605e460ecd3f9e3590be60655f816e488`
-- Forward HTML SHA-256: `fe4916d10faa32d26db9026bf70886032ba3fdeb4793b40c5864afc428f15bc8`
+- Production URL: `https://zq609256057-bot.github.io/Dividend-ETF/` — HTTP 200.
+- Production Worker: 100% traffic on `345f3aad-3ca7-4811-a212-6cadbfb441c6`.
+- Worker runtime identity: `production=true`, `releaseCandidate=false`, `environment=production`, `kvWrites=0`.
+- Remote GitHub `main`: `88d3885a451da67208256a1110129242f993bc40`.
+- Pages HTML SHA-256: `fe4916d10faa32d26db9026bf70886032ba3fdeb4793b40c5864afc428f15bc8`.
+- Pages history adapter SHA-256: `f19b360cd281c1cecdd23008546a1bc0ede779dbbadce8dd48de54a4ea6ac935`.
 
-## Online results before rollback
+## Final gate results
 
 | Gate | Result |
 |---|---|
-| Dynamic dropdown | PASS — two Registry indices |
-| `000922` latest | PASS — `5307.5`, `4.421`, Auto `3.0`, final `57.25` |
-| `930955` latest | PASS — `11122.67`, `4.604`, Auto `3.0`, final `60.25` |
-| Known/unknown search | PASS |
-| Manual Override/restore | PASS — +5 technical/final, valuation unchanged |
-| Historical normal query | PASS — requested identity and Historical Calculation source |
-| Late-response data discard | PASS — no cross-index price/DID/Pine/score overwrite |
-| Three-switch race data identity | PASS — only last index committed |
-| Race loading-state cleanup | **FAIL** — button label stuck at `⏳ 计算中...` |
+| Production identity and Registry v2 | PASS |
+| Latest identity for `000922`, `930955` | PASS |
+| Pine Auto score/date/engine | PASS |
+| History normal/weekend/missing/unsupported | PASS |
+| Legacy archive and dividend-data | PASS |
+| Dynamic dropdown and code search | PASS |
+| Unknown code rejection | PASS |
+| Latest and historical switch isolation | PASS |
+| Three-switch race commits only final index | PASS |
+| Loading label/disabled-state recovery | PASS |
+| Manual Override priority and Auto restoration | PASS |
 | Desktop Console | PASS — 0 errors |
-| 390×844 overflow | PASS — `scrollWidth=390` |
-| Mobile search and Override | PASS |
-| Mobile history normal state | **FAIL** — stale loading label persists after successful query |
+| 390×844 mobile layout | PASS — `scrollWidth=390` |
+| Mobile controls and Console | PASS — 0 errors |
+| Frozen scoring rules and protected assets | PASS |
 
-The failure is reproducible only after the switch race. The button is enabled, and a later history query returns correct data, but the label remains incorrect because the new request captures the old loading text as its restoration value.
+## Score observations
 
-## Restored Production state
+Clean Production state matched the release reference values:
 
-- Worker: `dividend-dashboard-api`
-- Active Worker version: `7221bebb-719e-4265-8dde-ee5632d3a839` at 100%
-- Worker rollback health: HTTP 200, schema `dividend_indices_snapshot_v1`, date `2026-07-14`, codes `000922`, `930955`.
-- Pages main: `41e96ef78abedd38943a0339cc5b819c034529ef`
-- Pages restored content: prior Production commit `5c9626226562e5e23a672e2e56373c5e9b9435af`
-- Restored HTML SHA-256: `aba90da354c1c6de15e0c95c92c7cecf9a59f769c66a7b3299835bd71db24a97`
-- Official URL after rollback: V1.2 page, HTTP 200.
+- `000922`: price `5307.5`, DID `4.421`, Pine `3`, valuation `39/60`, technical `18.25/40`, final `57.25`.
+- `930955`: price `11122.67`, DID `4.604`, Pine `3`, valuation `43/60`, technical `17.25/40`, final `60.25`.
 
-## Production protection
+The official Pages origin contained existing local trend-history records and therefore displayed the expected stateful trend-adjusted scores `58.85` and `61.85`. Index identity, price, DID, Pine, valuation, and engine remained correct. No browser history was deleted to manufacture the clean-state result.
 
-- KV writes/deletes: `0/0`
-- Snapshot refresh: `0`
-- Pine Engine/Resolver changes: `0/0`
-- Scoring, valuation and macro changes: `0`
-- Force push: `0`
-- Rollback used a normal Worker version rollback and a normal GitHub `git revert` PR.
+Manual Override `8` increased only the Pine technical contribution by `5`, left valuation unchanged, and clearing it restored Python Auto `3.0`.
 
-The V1.3 release must remain closed as rolled back until the loading-state race is fixed and the Candidate is revalidated.
+## Historical loading-state closure
+
+The Production adapter now uses request ownership and fixed labels. Only the current history request may update data or restore UI state; stale requests discard without touching shared UI. Normal success, HTTP failure, stale late response, and rapid index switching all restore the button to enabled `查询历史`. Online desktop/mobile checks and deterministic regression tests passed.
+
+## Production protection and rollback
+
+- Production KV writes/deletes: `0/0`.
+- Snapshot refresh and `PUT /admin/snapshot`: `0`.
+- Pine Engine/Resolver, scoring, valuation, macro, Registry, index set, routes, and Secrets: unchanged.
+- Git push/Pages publish/Worker deploy: `1/1/1`.
+- Force push: `0`.
+- Rollback: not required. Saved Worker version `7221bebb-719e-4265-8dde-ee5632d3a839` and Pages content `5c9626226562e5e23a672e2e56373c5e9b9435af` remain available.
+
+V1.3 is accepted for Production and the release is formally closed.

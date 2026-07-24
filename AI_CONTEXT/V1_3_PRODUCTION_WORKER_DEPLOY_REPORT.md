@@ -4,25 +4,42 @@ Date: 2026-07-16
 
 ## Deployment result
 
-**NOT DEPLOYED — PRE-DEPLOY WORKER IDENTITY GATE FAILED**
+The accepted V1.3 Worker was deployed to the exact Production name and passed the immediate read-only API gate. The release was subsequently rolled back because the pre-Pages full regression exposed a Pages history/index identity race.
 
-The accepted Candidate source has SHA-256 `25ded732993d98d565009178243af34ad265761a9439b325d7b7a915b924b6b4`, but its `/health` response is hardcoded to:
+## Forward deployment
 
-- service: `dividend-index-management-production-candidate`
-- `production: false`
-- `releaseCandidate: true`
+- Worker: `dividend-dashboard-api`
+- Version ID: `3674f57e-106b-43ab-b8bd-436b69317b41`
+- Version created: `2026-07-16T08:09:12.393Z`
+- Deployment observed: `2026-07-16T08:09:15.227Z`
+- Worker source SHA-256: `d852531aed2c694133136dc5dbf8e5ed873a128934d74e34c91cbdcfdcdc8d41`
+- Dry-run aggregate bundle SHA-256: `473d711868f64967fdb8f6aad62e76744cdd33cc933297810057b876b3445608`
+- Runtime identity: `production=true`, `releaseCandidate=false`, `environment=production`
+- Runtime bindings: existing `DIVIDEND_SNAPSHOTS`, Assets, and non-secret Production environment identity
+- Secret metadata: existing `SNAPSHOT_ADMIN_TOKEN` reference preserved; value was never read or printed
 
-The required Production acceptance contract is `production=true` with a Production release identity. No reviewed Production source/config variant exists that changes those fields through configuration while keeping the already accepted Candidate artifact byte-identical.
+The temporary Production config used the exact Production name, the existing namespace binding, no custom route, no Cron, no Shadow/service binding and no plaintext Secret. It and the dry-run output were securely deleted after rollback.
 
-Changing only the Wrangler Worker name to `dividend-dashboard-api` would deploy a Worker that necessarily fails the immediate Production identity gate. Rewriting the source in a temporary bundle would deploy an artifact that was never subjected to Candidate acceptance. Both actions violate the stop condition for Worker identity inconsistency.
+## Immediate read-only Worker acceptance
 
-## Actions deliberately not performed
+All checks passed before any Pages action:
 
-- No Production temporary config was rendered.
-- No Production dry-run bundle was generated.
-- No `wrangler deploy` targeted `dividend-dashboard-api`.
-- No Production version was created.
-- No route, Secret or namespace binding was modified.
-- No KV mutation endpoint was called.
+- `/health`: HTTP 200, Production identity correct, `kvWrites=0`.
+- `/indices`: Registry v2, exactly `000922` and `930955`.
+- `/latest`: both index identities and values correct.
+- Pine: score 3 for both indices, engine `pine-v7-red-rocket-final`, `shadowOnly=true`.
+- History: normal date passed; weekend returned `DATE_UNAVAILABLE`; absent date returned `DATE_NOT_FOUND`.
+- Unsupported `999999`: rejected with `UNSUPPORTED_CODE`.
+- `/archive` and both legacy `/dividend-data` identities passed.
 
-Current Production version remains `7221bebb-719e-4265-8dde-ee5632d3a839`. Candidate version `4fd589f0-8766-4935-bb4b-157c63d8da86` remains isolated and unchanged.
+Only GET requests were used. No `/admin/snapshot` request was made.
+
+## Rollback
+
+- Trigger: pre-Pages regression found that Candidate `fillHistoricalDate()` applies a completed response without the active index activation/abort identity gate. A request started for one index can therefore commit after selection changes to another index.
+- Rollback target: `7221bebb-719e-4265-8dde-ee5632d3a839`
+- Rollback deployment: `2026-07-16T08:17:51.788Z`
+- Result: restored version at 100% traffic.
+- Verification: deployment status reports the rollback version; after propagation, six consecutive cache-busted health reads matched the restored legacy health contract.
+
+Resource audit: one forward Worker version was deployed and one rollback deployment restored the baseline. Production KV writes 0, snapshot refreshes 0, KV deletes 0, route changes 0 and Secret changes 0.
