@@ -1,5 +1,5 @@
-import {fetchDashboard} from './dashboard_api.js?v=pine-v2-dashboard-ux-v1';
-import {adaptDashboardResponse} from './dashboard_view_model.js?v=pine-v2-dashboard-ux-v1';
+import {fetchDashboard} from './dashboard_api.js?v=pine-v2-dashboard-visual-polish-v1';
+import {adaptDashboardResponse} from './dashboard_view_model.js?v=pine-v2-dashboard-visual-polish-v1';
 
 export const DASHBOARD_MODES = Object.freeze([
   'LIVE_CANONICAL',

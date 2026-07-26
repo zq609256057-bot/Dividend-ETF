@@ -7,27 +7,27 @@ export const INDEX_DISPLAY_REGISTRY = Object.freeze({
 
 export const SIGNAL_BAND_REGISTRY = Object.freeze([
   Object.freeze({
-    min: 85, max: 100, range: '85–100', label: '强烈买入',
+    min: 85, max: 100, range: '85-100', label: '强烈买入',
     operation: '估值与技术共振，加速上涨，加大布局', color: 'deep-green',
   }),
   Object.freeze({
-    min: 70, max: 85, range: '70 ≤ 分数 < 85', label: '强买入',
+    min: 70, max: 85, range: '70-84', label: '强买入',
     operation: '估值技术双优，积极布局分批入场', color: 'green',
   }),
   Object.freeze({
-    min: 60, max: 70, range: '60 ≤ 分数 < 70', label: '中性偏多',
+    min: 60, max: 70, range: '60-69', label: '中性偏多',
     operation: '轻仓试探，等待技术确认后加仓', color: 'light-green',
   }),
   Object.freeze({
-    min: 45, max: 60, range: '45 ≤ 分数 < 60', label: '中性观望',
+    min: 45, max: 60, range: '45-59', label: '中性观望',
     operation: '持仓不动，耐心等待更好入场时机', color: 'yellow',
   }),
   Object.freeze({
-    min: 30, max: 45, range: '30 ≤ 分数 < 45', label: '中性偏空',
-    operation: '高估或技术偏弱，谨慎操作勿追高', color: 'orange',
+    min: 30, max: 45, range: '30-44', label: '中性偏空',
+    operation: '高估或技术偏弱，谨慎操作勿追高', color: 'red-light',
   }),
   Object.freeze({
-    min: 0, max: 30, range: '分数 < 30', label: '高估警示',
+    min: 0, max: 30, range: '0-29', label: '高估警示',
     operation: '估值与技术均偏弱，静待条件改善', color: 'red',
   }),
 ]);
@@ -55,6 +55,12 @@ const VOLUME_STATES = Object.freeze({
   up_mild: ['上涨温和量 · 健康', 'POSITIVE', 'green'],
   up_big: ['上涨放量 · 情绪偏热', 'NEGATIVE', 'orange'],
 });
+
+const MOMENTUM_DISPLAY_REGISTRY = Object.freeze([
+  Object.freeze({key: 'impulse_macd_score', label: 'Impulse MACD', max_score: 4}),
+  Object.freeze({key: 'andean_score', label: 'Andean Oscillator', max_score: 3}),
+  Object.freeze({key: 'squeeze_score', label: 'Squeeze', max_score: 3}),
+]);
 
 function number(value) {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
@@ -233,9 +239,13 @@ export function signalBand(score) {
 
 function componentSemantic(component) {
   const classifier = COMPONENT_SEMANTIC_REGISTRY[component?.component_id];
-  return classifier
+  const classified = classifier
     ? classifier(component)
     : semantic('状态不可用', 'NEUTRAL', 'yellow', component?.reason_code, '原始值缺失');
+  if (classified.direction === 'NEGATIVE' && classified.display_color === 'orange') {
+    return {...classified, display_color: 'red-light'};
+  }
+  return classified;
 }
 
 function indexOptions(selected) {
@@ -273,14 +283,7 @@ function renderHeader(vm, state) {
   const registry = INDEX_DISPLAY_REGISTRY[vm.index_code] || {name: `指数 ${vm.index_code}`};
   const fixture = vm.fixture_label === 'Synthetic Test Fixture';
   const technical = vm.identity || {};
-  return `<header class="card dashboard-header">
-    <div class="header-bar">
-      <div class="header-left">
-        <h1>${escapeHtml(registry.name)} · ${escapeHtml(vm.index_code)}</h1>
-        <div class="header-date">数据日期：${escapeHtml(vm.trade_date)}</div>
-      </div>
-      <span class="identity-chip ${vm.point_in_time_verified ? 'verified' : 'calculation'}">${identityLabel(vm)}</span>
-    </div>
+  return `<section class="card technical-card">
     ${controls(vm.index_code, vm.trade_date, vm.view_mode)}
     <details class="technical-details">
       <summary>技术信息</summary>
@@ -290,6 +293,13 @@ function renderHeader(vm, state) {
       ${fixture ? '<div class="fixture-warning">Synthetic Test Fixture · Local Candidate Test Data</div>' : ''}
       ${vm.calculation_disclaimer ? `<div>${escapeHtml(vm.calculation_disclaimer)}</div>` : ''}
     </details>
+  </section>
+  <header class="card dashboard-header">
+    <h1>${escapeHtml(registry.name)} · ${escapeHtml(vm.index_code)}</h1>
+    <div class="header-meta">
+      <span class="header-date">数据日期：${escapeHtml(vm.trade_date)}</span>
+      <span class="identity-chip ${vm.point_in_time_verified ? 'verified' : 'calculation'}">${identityLabel(vm)}</span>
+    </div>
   </header>`;
 }
 
@@ -304,7 +314,7 @@ function renderHero(vm) {
     <div class="hero-title">综合值博率评分</div>
     <div class="score-big semantic-${band.color}">${fixed(score, 1)}<span>/100</span></div>
     <div class="signal-pill semantic-bg-${band.color}">${band.label}</div>
-    <div class="scale-track"><div class="scale-fill" style="width:${width}%"></div></div>
+    <div class="scale-track"><div class="scale-fill semantic-bg-${band.color}" style="width:${width}%"></div></div>
     <div class="hero-breakdown">
       <span>估值 <b>${fixed(vm.score.valuation_score, 1)}</b></span>
       <span>技术 <b>${fixed(vm.score.technical_score, 1)}</b></span>
@@ -328,11 +338,16 @@ function renderKpis(vm) {
 function scoreProgress(component) {
   const score = number(component?.score);
   const max = number(component?.max_score);
-  if (score == null) return {width: 0, text: '得分缺失'};
-  if (max == null || max <= 0) return {width: 0, text: `${fixed(score, 1)}/满分配置异常`};
+  if (score == null) return {width: 0, text: '得分暂无数据', color: 'yellow', available: false};
+  if (max == null || max <= 0) {
+    return {width: 0, text: `${fixed(score, 1)}/满分配置异常`, color: 'yellow', available: false};
+  }
+  const width = Math.max(0, Math.min(100, score / max * 100));
   return {
-    width: Math.max(0, Math.min(100, score / max * 100)),
+    width,
     text: `${fixed(score, 1)}/${fixed(max, 1)}`,
+    color: signalBand(width)?.color || 'yellow',
+    available: true,
   };
 }
 
@@ -342,13 +357,13 @@ function quantRow(component) {
   return `<div class="score-row" data-component="${escapeHtml(component.component_id)}">
     <div class="score-row-heading">
       <span class="score-row-label">${escapeHtml(COMPONENT_NAMES[component.component_id] || component.component_id)}</span>
+      <span class="component-state semantic-${progress.color}">${escapeHtml(info.short_label)}</span>
+      <span class="score-row-pts semantic-${progress.color}">${progress.text}</span>
+    </div>
+    <div class="score-row-detail">
+      <div class="score-bar-wrap"><div class="score-bar-fill semantic-bg-${progress.color}" style="width:${progress.width}%"></div></div>
       <span class="score-row-raw">${escapeHtml(info.raw_text)}</span>
     </div>
-    <div class="score-row-progress">
-      <div class="score-bar-wrap"><div class="score-bar-fill semantic-bg-${info.display_color}" style="width:${progress.width}%"></div></div>
-      <span class="score-row-pts">${progress.text}</span>
-    </div>
-    <div class="component-state semantic-${info.display_color}">${escapeHtml(info.short_label)}</div>
   </div>`;
 }
 
@@ -383,10 +398,10 @@ function renderPosition(vm) {
   return `<section class="card" data-section="price-position"><h2 class="card-title">②252日价格位置</h2>
     ${complete ? `<div class="gauge-track valuation-gauge"><div class="gauge-ptr" style="left:${Math.max(0, Math.min(100, position))}%"></div></div>
       <div class="gauge-labels"><span>0% 低位</span><span>50% 中位</span><span>100% 高位</span></div>` : '<div class="missing-value">数据不足，暂无法计算</div>'}
-    <div class="pp252-row"><span>当前指数点位</span><span class="pp252-value">${points(current)}</span></div>
-    <div class="pp252-row"><span>252 日最高</span><span class="pp252-value">${complete ? points(high) : '数据不足，暂无法计算'}</span></div>
-    <div class="pp252-row"><span>252 日最低</span><span class="pp252-value">${complete ? points(low) : '数据不足，暂无法计算'}</span></div>
-    <div class="pp252-row"><span>252 日位置</span><span class="pp252-value semantic-${state.display_color}">${complete ? percent(position, 1) : '数据不足，暂无法计算'}</span></div>
+    <div class="pp252-row pp252-current"><span>当前指数点位</span><span class="pp252-value">${points(current)}</span></div>
+    <div class="pp252-row pp252-high"><span>252 日最高</span><span class="pp252-value">${complete ? points(high) : '数据不足，暂无法计算'}</span></div>
+    <div class="pp252-row pp252-low"><span>252 日最低</span><span class="pp252-value">${complete ? points(low) : '数据不足，暂无法计算'}</span></div>
+    <div class="pp252-row pp252-position"><span>252 日位置</span><span class="pp252-value semantic-${state.display_color}">${complete ? percent(position, 1) : '数据不足，暂无法计算'}</span></div>
     <div class="field-note">位置字段单位：${escapeHtml(card.unit ?? card.position_unit ?? '字段不可用')} · ${escapeHtml(state.short_label)}</div>
   </section>`;
 }
@@ -394,14 +409,14 @@ function renderPosition(vm) {
 function renderPriceMa(vm) {
   const ma = vm.cards?.price_ma || {};
   const point = number(ma.point ?? vm.market?.index_point?.value);
-  const rows = [['SMA60', ma.sma60], ['SMA120', ma.sma120], ['SMA250', ma.sma250]]
-    .map(([name, value]) => {
+  const rows = [['SMA60', ma.sma60, 'sma60'], ['SMA120', ma.sma120, 'sma120'], ['SMA250', ma.sma250, 'sma250']]
+    .map(([name, value, className]) => {
       const average = number(value);
       const deviation = point != null && average != null && average > 0
         ? (point - average) / average * 100
         : null;
       const direction = deviation == null ? '' : deviation > 0 ? '↑' : deviation < 0 ? '↓' : '→';
-      return `<tr><td>${name}</td><td>${points(average)}</td><td>${deviation == null ? '该口径暂无数据' : `${direction} ${deviation > 0 ? '+' : ''}${fixed(deviation, 1)}%`}</td></tr>`;
+      return `<tr class="${className}"><td>${name}</td><td>${points(average)}</td><td>${deviation == null ? '该口径暂无数据' : `${direction} ${deviation > 0 ? '+' : ''}${fixed(deviation, 1)}%`}</td></tr>`;
     }).join('');
   return `<section class="card" data-section="price-ma"><h2 class="card-title">③价格与均线结构</h2>
     <table class="data-table"><thead><tr><th>均线</th><th>点位</th><th>当前偏离</th></tr></thead><tbody>${rows}</tbody></table>
@@ -421,8 +436,34 @@ function valuationConclusion(vm) {
   const positive = states.filter(item => item.direction === 'POSITIVE').length;
   const negative = states.filter(item => item.direction === 'NEGATIVE').length;
   if (positive >= 2 && negative === 0) return semantic('低估或性价比较高', 'POSITIVE', 'green', '', '');
-  if (negative >= 2) return semantic('偏贵或性价比偏低', 'NEGATIVE', 'orange', '', '');
+  if (negative >= 2) return semantic('偏贵或性价比偏低', 'NEGATIVE', 'red', '', '');
   return semantic('估值整体合理', 'NEUTRAL', 'yellow', '', '');
+}
+
+function valuationState(kind, component, percentileValue) {
+  const percentile = number(percentileValue);
+  if (kind === 'pe') {
+    if (percentile == null) return semantic('暂无数据', 'NEUTRAL', 'yellow', '', '');
+    if (percentile <= 35) return semantic('低分位 · 便宜', 'POSITIVE', 'green', '', '');
+    if (percentile >= 65) return semantic('高分位 · 偏贵', 'NEGATIVE', 'red', '', '');
+    return semantic('中位 · 合理', 'NEUTRAL', 'yellow', '', '');
+  }
+  return componentSemantic(component);
+}
+
+function valuationMetric(label, valueText, component, state, unavailableReason = '') {
+  const progress = scoreProgress(component);
+  const missing = number(component?.score) == null || number(component?.max_score) == null;
+  const status = missing && unavailableReason ? unavailableReason : state.short_label;
+  const color = missing ? 'yellow' : progress.color;
+  return `<div class="valuation-metric">
+    <div class="metric-heading"><span>${label}</span><b>${valueText}</b></div>
+    <div class="metric-state semantic-${color}">${escapeHtml(status)}</div>
+    <div class="metric-progress">
+      <div class="score-bar-wrap"><div class="score-bar-fill semantic-bg-${color}" style="width:${progress.width}%"></div></div>
+      <span class="score-row-pts semantic-${color}">${progress.text}</span>
+    </div>
+  </div>`;
 }
 
 function renderValuation(vm) {
@@ -438,49 +479,88 @@ function renderValuation(vm) {
   const pePct = number(card.pe_ttm_percentile);
   const spread = number(card.yield_spread ?? vm.market?.yield_spread?.value);
   const spreadPct = number(card.yield_spread_percentile ?? spreadComponent?.input_value?.yield_spread_prefix_percentile);
-  const roe = number(card.roe);
   const conclusion = valuationConclusion(vm);
+  const peUnavailable = pePct == null
+    ? escapeHtml(card.field_availability?.pe_ttm_percentile || '估值评分口径暂无数据')
+    : 'PE-TTM 仅展示历史分位，未参与冻结评分';
   return `<section class="card" data-section="valuation"><h2 class="card-title">④估值仪表盘</h2>
     <div class="valuation-summary semantic-bg-${conclusion.display_color}">${conclusion.short_label}</div>
-    <div class="metric-grid">
-      <div class="metric-item"><span>DID 当前值</span><b>${percent(did)}</b><small>${percentileMeaning(didPct, '低分位=历史股息率偏低', '高分位=历史股息率较高')}</small></div>
-      <div class="metric-item"><span>PB 当前值</span><b>${fixed(pb, 4)}</b><small>${percentileMeaning(pbPct, '低分位=便宜', '高分位=偏贵')}</small></div>
-      <div class="metric-item"><span>PE-TTM 当前值</span><b>${fixed(pe, 4)}</b><small>${pePct == null ? escapeHtml(card.field_availability?.pe_ttm_percentile || '该口径暂无数据') : percentileMeaning(pePct, '低分位=便宜', '高分位=偏贵')}</small></div>
-      <div class="metric-item"><span>股债利差</span><b>${percent(spread)}</b><small>${percentileMeaning(spreadPct, '低分位=相对吸引力偏低', '高分位=相对吸引力较高')}</small></div>
-      <div class="metric-item"><span>隐含 ROE</span><b>${percent(roe)}</b><small>由同日 PB / PE-TTM 口径推导，不等同真实 ROE</small></div>
+    <div class="valuation-metrics">
+      ${valuationMetric('DID 当前值', percent(did), didComponent, valuationState('did', didComponent, didPct))}
+      ${valuationMetric('PB 当前值', fixed(pb, 4), pbComponent, valuationState('pb', pbComponent, pbPct))}
+      ${valuationMetric('PE-TTM 当前值', fixed(pe, 4), null, valuationState('pe', null, pePct), peUnavailable)}
+      ${valuationMetric('股债利差', percent(spread), spreadComponent, valuationState('spread', spreadComponent, spreadPct))}
     </div>
+    <div class="field-note">进度条严格使用对应冻结分项得分÷满分；PE-TTM 没有独立评分分项时明确显示暂无数据，不生成替代得分。</div>
   </section>`;
+}
+
+function momentumRow(label, rawText, score, maxScore, stateText) {
+  const progress = scoreProgress({score, max_score: maxScore});
+  return `<div class="momentum-row">
+    <div class="metric-heading"><span>${escapeHtml(label)}</span><b>${escapeHtml(rawText)}</b></div>
+    <div class="metric-state semantic-${progress.color}">${escapeHtml(stateText)}</div>
+    <div class="metric-progress">
+      <div class="score-bar-wrap"><div class="score-bar-fill semantic-bg-${progress.color}" style="width:${progress.width}%"></div></div>
+      <span class="score-row-pts semantic-${progress.color}">${progress.text}</span>
+    </div>
+  </div>`;
 }
 
 function renderMomentum(vm) {
   const card = vm.cards?.momentum || {};
+  const rsiComponent = componentById(vm, 'rsi');
+  const pineComponent = componentById(vm, 'pine');
   const rsiState = componentSemantic(componentById(vm, 'rsi'));
   const pineState = componentSemantic(componentById(vm, 'pine'));
-  const detailAvailable = ['impulse_macd_score', 'andean_score', 'squeeze_score']
-    .every(key => number(card[key]) != null);
+  const detailRows = MOMENTUM_DISPLAY_REGISTRY.map(item => {
+    const score = number(card[item.key]);
+    const ratio = score == null ? null : score / item.max_score * 100;
+    const state = ratio == null
+      ? '暂无数据'
+      : ratio >= 70 ? '动能偏强' : ratio >= 45 ? '动能中性' : '动能偏弱';
+    return momentumRow(
+      item.label,
+      score == null ? '暂无数据' : `原始分项 ${fixed(score, 1)}`,
+      score,
+      item.max_score,
+      state,
+    );
+  }).join('');
   return `<section class="card" data-section="momentum"><h2 class="card-title">⑤动能指标</h2>
-    <div class="metric-grid">
-      <div class="metric-item"><span>RSI(14)</span><b>${fixed(card.rsi, 1)}</b><small class="semantic-${rsiState.display_color}">${escapeHtml(rsiState.short_label)}</small></div>
-      <div class="metric-item"><span>Pine 综合得分</span><b>${number(card.pine_score) == null ? '该口径暂无数据' : `${fixed(card.pine_score, 1)}/${fixed(card.pine_max_score, 1)}`}</b><small class="semantic-${pineState.display_color}">${escapeHtml(pineState.short_label)}</small></div>
+    <div class="momentum-list">
+      ${momentumRow('RSI(14)', `原始值 ${fixed(card.rsi, 1)}`, rsiComponent?.score, rsiComponent?.max_score, rsiState.short_label)}
+      ${momentumRow('Pine 综合得分', number(card.pine_score) == null ? '暂无数据' : `原始值 ${fixed(card.pine_score, 1)}`, pineComponent?.score, pineComponent?.max_score, pineState.short_label)}
+      ${detailRows}
     </div>
-    ${detailAvailable ? `<div class="pine-breakdown">
-      <span>Impulse MACD <b>${fixed(card.impulse_macd_score, 1)}</b></span>
-      <span>Andean <b>${fixed(card.andean_score, 1)}</b></span>
-      <span>Squeeze <b>${fixed(card.squeeze_score, 1)}</b></span>
-    </div>` : `<div class="field-note">${escapeHtml(card.pine_detail_availability || '该 Pine 口径未保存三分项')}</div>`}
+    <div class="field-note">三分项仅按冻结满分 4/3/3 做展示归一化；不改变 Pine 规则、分项得分或综合结果。${escapeHtml(card.pine_detail_availability || '')}</div>
   </section>`;
+}
+
+function marketExplanation(kind, state, value) {
+  if (number(value) == null) return '暂无数据，无法形成市场环境判断';
+  if (kind === 'cn10y') {
+    if (state.direction === 'POSITIVE') return '低利率环境对红利资产相对友好';
+    if (state.direction === 'NEGATIVE') return '利率偏高，对红利资产相对不利';
+    return '利率处于中性区间，影响偏中性';
+  }
+  if (state.direction === 'POSITIVE') return '股债利差较宽，相对吸引力较好';
+  if (state.direction === 'NEGATIVE') return '股债利差偏窄，相对吸引力受限';
+  return '股债利差处于中性区间';
 }
 
 function renderMarketEnvironment(vm) {
   const card = vm.cards?.market_environment || {};
   const cn10y = number(card.cn10y?.value ?? card.cn10y ?? vm.market?.cn10y?.value);
   const spread = number(card.yield_spread?.value ?? card.yield_spread ?? vm.market?.yield_spread?.value);
+  const cn10yState = componentSemantic(componentById(vm, 'cn10y'));
+  const spreadState = componentSemantic(componentById(vm, 'yield_spread'));
   return `<section class="card" data-section="market-environment"><h2 class="card-title">⑥市场环境</h2>
     <div class="environment-grid">
-      <div class="environment-box environment-cn10y"><span>CN10Y 国债收益率</span><b>${percent(cn10y, 4)}</b></div>
-      <div class="environment-box environment-spread"><span>股债利差</span><b>${spread != null && spread > 0 ? '+' : ''}${percent(spread)}</b></div>
+      <div class="environment-box"><span>CN10Y 国债收益率</span><b>${percent(cn10y, 4)}</b><small class="semantic-${cn10yState.display_color}">${escapeHtml(cn10yState.short_label)}：${escapeHtml(marketExplanation('cn10y', cn10yState, cn10y))}</small></div>
+      <div class="environment-box"><span>股债利差</span><b>${spread != null && spread > 0 ? '+' : ''}${percent(spread)}</b><small class="semantic-${spreadState.display_color}">${escapeHtml(spreadState.short_label)}：${escapeHtml(marketExplanation('spread', spreadState, spread))}</small></div>
     </div>
-    <div class="field-note">单位均为百分比；股债利差 = DID − CN10Y。</div>
+    <div class="field-note">解释由现有数据与冻结阈值确定性生成；单位均为百分比，股债利差 = DID − CN10Y。</div>
   </section>`;
 }
 
@@ -490,16 +570,43 @@ function semanticFactors(vm) {
   const rank = entry => number(entry.component.score) ?? -Infinity;
   const positive = entries.filter(entry => entry.info.direction === 'POSITIVE')
     .sort((a, b) => rank(b) - rank(a)).slice(0, 5);
-  const negative = entries.filter(entry => entry.info.direction === 'NEGATIVE')
+  let negative = entries.filter(entry => entry.info.direction === 'NEGATIVE')
     .sort((a, b) => rank(a) - rank(b)).slice(0, 5);
+  if (!negative.length) {
+    negative = entries.filter(entry => {
+      const score = number(entry.component.score);
+      const max = number(entry.component.max_score);
+      return score != null && max != null && max > 0 && score / max < .5;
+    }).map(entry => {
+      const ratio = entry.component.score / entry.component.max_score;
+      const strength = ratio < .3 ? '明显利空' : '偏弱制约';
+      return {
+        component: entry.component,
+        info: semantic(
+          `得分低于满分50% · ${strength}`,
+          'NEGATIVE',
+          ratio < .3 ? 'red' : 'red-light',
+          'EXPLANATION_ONLY_LOW_SCORE',
+          `${fixed(entry.component.score, 1)}/${fixed(entry.component.max_score, 1)}`,
+        ),
+      };
+    }).sort((a, b) => rank(a) - rank(b)).slice(0, 5);
+  }
   return {positive, negative};
 }
 
-function factorList(title, entries, color, emptyText) {
+function factorList(title, entries, color, emptyText, className) {
   const body = entries.length
     ? entries.map(({component, info}) => `<div class="analyst-item"><span class="analyst-dot ${color}"></span><p><b>${escapeHtml(COMPONENT_NAMES[component.component_id])}</b>：${escapeHtml(info.short_label)}（${escapeHtml(info.raw_text)}）</p></div>`).join('')
     : `<div class="field-note">${emptyText}</div>`;
-  return `<div class="analyst-block"><h3>${title}</h3>${body}</div>`;
+  return `<div class="analyst-block ${className}"><h3>${title}</h3>${body}</div>`;
+}
+
+function trendBonusClass(value) {
+  const bonus = number(value);
+  if (bonus == null || bonus === 0) return 'trend-neutral';
+  const strength = Math.abs(bonus) >= 5 ? 'strong' : Math.abs(bonus) >= 2 ? 'medium' : 'light';
+  return bonus > 0 ? `trend-positive-${strength}` : `trend-negative-${strength}`;
 }
 
 function renderJudgment(vm) {
@@ -517,11 +624,11 @@ function renderJudgment(vm) {
     : trend.field_availability?.reference_dates || '趋势窗口不完整';
   const bonus = number(trend.trend_bonus ?? trend.score ?? vm.score?.trend_adjustment);
   return `<section class="card" data-section="judgment"><h2 class="card-title">⑦综合研判</h2>
-    ${factorList('利多因素', factors.positive, 'green', '当前没有被规则判定为明确利多的组件。')}
-    ${factorList('利空因素', factors.negative, 'red', '当前没有被规则判定为明确利空的组件。')}
-    <div class="analyst-block"><h3>综合判断</h3><p>${escapeHtml(judgment)}</p></div>
-    <div class="analyst-block"><h3>趋势动量加减分明细</h3>
-      <div class="trend-line"><span>趋势动量</span><b>${bonus == null ? '该口径暂无数据' : `${bonus > 0 ? '+' : ''}${fixed(bonus, 1)} 分`}</b></div>
+    ${factorList('利多因素', factors.positive, 'green', '当前没有被规则判定为明确利多的组件。', 'judgment-bullish')}
+    ${factorList('利空因素', factors.negative, 'red', '当前没有被规则判定为明确利空的组件。', 'judgment-bearish')}
+    <div class="analyst-block judgment-summary"><h3>综合判断</h3><p>${escapeHtml(judgment)}</p></div>
+    <div class="analyst-block judgment-trend"><h3>趋势动量加减分明细</h3>
+      <div class="trend-line ${trendBonusClass(bonus)}"><span>真实 trend bonus</span><b>${bonus == null ? '该口径暂无数据' : `${bonus > 0 ? '+' : ''}${fixed(bonus, 1)} 分`}</b></div>
       <div class="trend-line"><span>窗口状态</span><b>${trend.trend_window_complete === true ? '完整' : trend.trend_window_complete === false ? '不完整' : '当时点快照未保存该字段'}</b></div>
       <div class="trend-line"><span>参考交易日</span><b>${escapeHtml(references)}</b></div>
       <div class="trend-line"><span>原因</span><b>${escapeHtml(trend.trigger_reason || trend.reason_code || '该口径暂无数据')}</b></div>
@@ -532,7 +639,7 @@ function renderJudgment(vm) {
 function renderSignals(vm) {
   const current = signalBand(vm.score?.total_score);
   const rows = SIGNAL_BAND_REGISTRY.map(band => (
-    `<tr class="signal-${band.color}${current === band ? ' signal-current' : ''}">
+    `<tr class="signal-row signal-${band.color}${current === band ? ' signal-current' : ''}">
       <td>${band.range}</td><td>${band.label}${current === band ? '<span class="current-badge">当前</span>' : ''}</td><td>${band.operation}</td>
     </tr>`
   )).join('');

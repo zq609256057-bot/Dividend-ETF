@@ -1,9 +1,9 @@
-import {DashboardAppState, DashboardRequestController} from './app_state.js?v=pine-v2-dashboard-ux-v1';
+import {DashboardAppState, DashboardRequestController} from './app_state.js?v=pine-v2-dashboard-visual-polish-v1';
 import {
   adaptHistoricalDashboardResponse,
   fetchHistoricalDashboard,
-} from './dashboard_api.js?v=pine-v2-dashboard-ux-v1';
-import {renderApp} from './dashboard_renderer.js?v=pine-v2-dashboard-ux-v1';
+} from './dashboard_api.js?v=pine-v2-dashboard-visual-polish-v1';
+import {renderApp} from './dashboard_renderer.js?v=pine-v2-dashboard-visual-polish-v1';
 
 const BASE_URL = 'https://dividend-dashboard-api.zq609256057.workers.dev';
 const state = new DashboardAppState();
