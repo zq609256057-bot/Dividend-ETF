@@ -14,15 +14,40 @@ function statusLabel(id,score){
 
 function renderApp(state){
   const vm=state.dashboard_view_model;
-  if(state.loading)return '<div class="loader">⏳ 正在获取 '+state.index_code+' DashboardViewModel...</div>';
-  if(state.error||!vm)return '<div class="error-card"><h3>⚠️ Dashboard 不可用</h3><p>'+(state.error||'CANONICAL_DASHBOARD_UNAVAILABLE')+'</p></div>';
-  const s=vm.score||{}, m=vm.market||{}, cd=vm.cards||{}, isHist=state.mode==='HISTORICAL_REPLAY';
-  const badge=isHist?'<span class="header-badge">HISTORICAL_REPLAY</span>':'<span class="header-badge auto">✅ 自动数据 · '+vm.trade_date+'</span>';
+  if(state.loading)return '<div class="loader" data-state="LOADING"><div>⏳ 正在获取 '+state.index_code+' DashboardViewModel...</div><div style="display:flex;justify-content:center;gap:8px;margin-top:14px"><input type="date" class="date-input" id="v2-hdr-date" value="'+(state.trade_date||'')+'" aria-label="历史日期"/><select id="v2-idx-sel" aria-label="指数" style="padding:4px 8px;border:1px solid #ddd6fe;border-radius:6px;font-size:12px;background:#fff"><option value="000922"'+(state.index_code==='000922'?' selected':'')+'>000922 红利低波</option><option value="930955"'+(state.index_code==='930955'?' selected':'')+'>930955 红利低波100</option></select></div></div>';
+  if(state.error||!vm){
+    const unavailable=state.error==='HISTORICAL_DASHBOARD_UNAVAILABLE';
+    return '<div class="error-card" data-state="UNAVAILABLE"><div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:8px">Pine V2 Governed Archive</div><h3>⚠️ '+(unavailable?'该日期无可用历史评分':'Dashboard 不可用')+'</h3><p>'+(state.error||'HISTORICAL_DASHBOARD_UNAVAILABLE')+'</p><div style="display:flex;justify-content:center;gap:8px;margin-top:14px"><input type="date" class="date-input" id="v2-hdr-date" value="'+(state.trade_date||'')+'" aria-label="历史日期"/><select id="v2-idx-sel" aria-label="指数" style="padding:4px 8px;border:1px solid #ddd6fe;border-radius:6px;font-size:12px;background:#fff"><option value="000922"'+(state.index_code==='000922'?' selected':'')+'>000922 红利低波</option><option value="930955"'+(state.index_code==='930955'?' selected':'')+'>930955 红利低波100</option></select></div></div>';
+  }
+  const s=vm.score||{}, m=vm.market||{}, cd=vm.cards||{};
+  const isReplay=state.mode==='HISTORICAL_REPLAY';
+  const isCalculation=state.mode==='HISTORICAL_CALCULATION';
+  const badge=isReplay
+    ? '<span class="header-badge auto" data-mode="HISTORICAL_REPLAY">历史回放 · 当时点已验证</span>'
+    : isCalculation
+      ? '<span class="header-badge" data-mode="HISTORICAL_CALCULATION">历史计算 · 非当时点验证</span>'
+      : '<span class="header-badge auto">✅ 自动数据 · '+vm.trade_date+'</span>';
   const h=[];
   // Header + Index Selector
   h.push('<div class="card" style="border-radius:16px;margin-bottom:20px"><div class="header-bar"><div class="header-left"><h1>'+vm.index_code+' · 红利低波看板</h1><div style="display:flex;align-items:center;gap:6px;margin-top:4px"><span class="index-code">多维量化看板 ·</span><input type="date" class="date-input" id="v2-hdr-date" value="'+(vm.trade_date||'')+'"/><select id="v2-idx-sel" style="padding:4px 8px;border:1px solid #ddd6fe;border-radius:6px;font-size:12px;background:#fff"><option value="000922"'+(state.index_code==='000922'?' selected':'')+'>000922 红利低波</option><option value="930955"'+(state.index_code==='930955'?' selected':'')+'>930955 红利低波100</option></select></div></div>'+badge+'</div></div>');
+  if(isReplay||isCalculation){
+    const isSynthetic=vm.fixture_label==='Synthetic Test Fixture';
+    const note=isCalculation
+      ? (vm.calculation_disclaimer||'该结果根据版本化历史数据和冻结评分规则重新计算，不代表该交易日当时已经保存的不可变评分。')
+      : (isSynthetic
+        ? '本页为Local Candidate中的Synthetic Verified路由夹具，不是Production历史记录。'
+        : '按原始不可变身份回放，未使用V2重算覆盖原始Verified分数。');
+    const identityTitle=isSynthetic
+      ? 'Synthetic Test Fixture · Local Candidate Test Data'
+      : (isReplay
+        ? 'Original Verified Replay · Production Archive'
+        : (vm.view_mode==='v1_comparison'
+          ? 'V1 Historical Comparison · Production Archive'
+          : 'V2 Historical Calculation · Production Archive'));
+    h.push('<div class="card" data-fixture-label="'+(isSynthetic?'Synthetic Test Fixture':'Real Versioned Archive')+'" style="border:1px solid '+(isCalculation?'#f59e0b':'#34d399')+';background:'+(isCalculation?'#fffbeb':'#ecfdf5')+'"><div style="font-size:12px;font-weight:800;color:'+(isCalculation?'#92400e':'#065f46')+'">'+identityTitle+'</div><p style="font-size:11px;line-height:1.6;margin-top:6px;color:var(--muted)">'+note+'</p><p style="font-size:10px;margin-top:6px;color:var(--muted)">Version tuple: '+(vm.identity?.version_tuple_digest||'—')+' · Pine: '+(vm.pine_rule_version||'—')+' · Timeframe: '+(vm.timeframe_identity||'—')+'</p></div>');
+  }
   // Hero (BEFORE KPI)
-  const ts=s.total_score||0; let zone='回避',zc='score-red',bg='#fee2e2',sig='谨慎观望',op='防御为主，等待更好机会';
+  const ts=s.total_score??0; let zone='回避',zc='score-red',bg='#fee2e2',sig='谨慎观望',op='防御为主，等待更好机会';
   if(ts>=85){zone='强烈买入';zc='score-green';bg='#d1fae5';sig='强买入信号';op='积极配置，分批建仓'}
   else if(ts>=70){zone='关注';zc='score-green';bg='#d1fae5';sig='买入信号';op='分批布局，逐步加仓'}
   else if(ts>=60){zone='关注';zc='score-green';bg='#d1fae5';sig='中性偏多';op='逐步关注，适当参与'}
