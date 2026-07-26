@@ -158,6 +158,12 @@ export function adaptHistoricalDashboardResponse(payload, expected) {
       || payload.dashboard?.timeframe_identity !== '1D'
       || !payload.dashboard?.pine_rule_version
       || !payload.dashboard?.score_profile_version
+      || payload.dashboard?.presentation_schema_version !== 'dashboard_presentation_v1'
+      || !payload.dashboard?.cards?.price_position_252
+      || !('price_252_position_percent' in payload.dashboard.cards.price_position_252)
+      || !('current_index_level' in payload.dashboard.cards.price_position_252)
+      || !('trend_bonus' in (payload.dashboard?.trend || {}))
+      || !Array.isArray(payload.dashboard?.trend?.reference_dates)
     )
   ) {
     failHistorical('HISTORICAL_DASHBOARD_IDENTITY_MISMATCH', 409);
