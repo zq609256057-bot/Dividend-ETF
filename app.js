@@ -1,9 +1,13 @@
 import {DashboardAppState, DashboardRequestController} from './app_state.js';
+import {fetchDashboard} from './dashboard_api.js';
 import {renderApp} from './dashboard_renderer.js';
 
-const BASE_URL = 'https://canonical-v1-dividend-dashboard-api-canonical-candidate-v1.zq609256057.workers.dev';
+const BASE_URL = 'https://dividend-dashboard-api.zq609256057.workers.dev';
 const state = new DashboardAppState();
-const controller = new DashboardRequestController({state});
+const controller = new DashboardRequestController({
+  state,
+  loader: request => fetchDashboard({...request, baseUrl: BASE_URL}),
+});
 const root = document.querySelector('#root');
 const INDICES = ['000922','930955'];
 let currentDate = 'latest';
